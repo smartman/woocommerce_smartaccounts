@@ -1,5 +1,9 @@
 <?php
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+} // Exit if accessed directly
+
 class SmartAccountsApi {
 
 	public function sendRequest( $body, $apiUrl, $extraParams = null ) {

@@ -10,7 +10,8 @@ include_once( dirname( __FILE__ ) . '/../woocommerce/woocommerce.php' );
 class SmartAccounts {
 
 	public static function orderStatusProcessing( $orderId ) {
-//		try {
+		//try catch makes sure your store will operate even if there are errors
+		try {
 			$order          = new WC_Order( $orderId );
 			$saClient       = new SmartAccountsClient( $order );
 			$client         = $saClient->getClient();
@@ -19,9 +20,9 @@ class SmartAccounts {
 			$invoice   = $saSalesInvoice->saveInvoice();
 			$saPayment = new SmartAccountsPayment( $order, $invoice );
 			$saPayment->createPayment();
-//		} catch ( Exception $exception ) {
-//
-//		}
+		} catch ( Exception $exception ) {
+
+		}
 	}
 
 

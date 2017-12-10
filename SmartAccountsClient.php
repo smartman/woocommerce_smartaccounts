@@ -1,5 +1,9 @@
 <?php
 
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+} // Exit if accessed directly
+
 class SmartAccountsClient {
 
 	protected $isAnonymous;
@@ -62,23 +66,6 @@ class SmartAccountsClient {
 		return $this->addNewSaClient( null, $name, $country );
 	}
 
-	/**
-	 * Returns SmartAccounts client for the logged in user in the order. Creates new if it does not exist yet.
-	 */
-	private function getLoggedInClient( $clients, $country, $name, $email ) {
-		if ( ! is_array( $clients ) || count( $clients ) == 0 ) {
-			return $this->addNewSaClient( $email, $name, $country );
-		}
-
-		foreach ( $clients as $client ) {
-			if ( $this->hasEmail( $client, $email ) && $this->name == $client["name"] ) {
-				return $client;
-			}
-		}
-
-		return $this->addNewSaClient( $email, $name, $country );
-	}
-
 	private function isGeneralCountryClient( $client, $country ) {
 		if ( ! array_key_exists( "address", $client ) ) {
 			return false;
@@ -86,19 +73,6 @@ class SmartAccountsClient {
 
 		foreach ( $client["address"] as $key => $value ) {
 			if ( $key == "country" && $value == $country && $this->name == $client["name"] ) {
-				return true;
-			}
-		}
-
-		return false;
-	}
-
-	private function hasEmail( $client, $email ) {
-		if ( ! array_key_exists( "contacts", $client ) ) {
-			return false;
-		}
-		foreach ( $client["contacts"] as $contact ) {
-			if ( $contact["type"] == "EMAIL" && $contact["value"] == $email ) {
 				return true;
 			}
 		}
@@ -128,6 +102,36 @@ class SmartAccountsClient {
 		$client         = $this->api->sendRequest( null, "purchasesales/clients:get", "id=$clientId" );
 
 		return $client["clients"][0];
+	}
+
+	/**
+	 * Returns SmartAccounts client for the logged in user in the order. Creates new if it does not exist yet.
+	 */
+	private function getLoggedInClient( $clients, $country, $name, $email ) {
+		if ( ! is_array( $clients ) || count( $clients ) == 0 ) {
+			return $this->addNewSaClient( $email, $name, $country );
+		}
+
+		foreach ( $clients as $client ) {
+			if ( $this->hasEmail( $client, $email ) && $this->name == $client["name"] ) {
+				return $client;
+			}
+		}
+
+		return $this->addNewSaClient( $email, $name, $country );
+	}
+
+	private function hasEmail( $client, $email ) {
+		if ( ! array_key_exists( "contacts", $client ) ) {
+			return false;
+		}
+		foreach ( $client["contacts"] as $contact ) {
+			if ( $contact["type"] == "EMAIL" && $contact["value"] == $email ) {
+				return true;
+			}
+		}
+
+		return false;
 	}
 
 }

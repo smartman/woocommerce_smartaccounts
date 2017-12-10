@@ -1,15 +1,16 @@
 <?php
 /**
  * Plugin Name: SmartAccounts
- * Plugin URI: http://marguspala.com
+ * Plugin URI: https://github.com/smartman/woocommerce_smartaccounts
  * Description: This plugin creates sales invoices in the smartaccounts.ee Online Accounting Software after Woocommerce order creation
- * Version: 0.9
+ * Version: 1.0
  * Author: Margus Pala
  * Author URI: http://marguspala.com
+ * License: GPLv2 or later
+ * License URI:  https://www.gnu.org/licenses/gpl-2.0.html
  * Requires at least: 4.8.0
- * Tested up to: 4.9
+ * Tested up to: 4.9.1
  */
-
 
 
 if ( ! defined( 'ABSPATH' ) ) {
