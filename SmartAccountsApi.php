@@ -23,22 +23,20 @@ class SmartAccountsApi {
 		$sig = hash_hmac( 'sha256', $urlParams . $bodyJson, $sk );
 		$url = "https://sa.smartaccounts.eu/api/$apiUrl?$urlParams&signature=$sig";
 
-		$ch = curl_init();
+		$args = array(
+			'body'    => $bodyJson,
+			'headers' => [ 'Content-Type' => 'application/json' ]
+		);
 
-		curl_setopt( $ch, CURLOPT_URL, $url );
-		curl_setopt( $ch, CURLOPT_POST, 1 );
-		curl_setopt( $ch, CURLOPT_HTTPHEADER, [ 'Content-Type: application/json' ] );
-		curl_setopt( $ch, CURLOPT_POSTFIELDS, $bodyJson );
-		curl_setopt( $ch, CURLOPT_RETURNTRANSFER, true );
-		$server_output = curl_exec( $ch );
-		$responseCode  = curl_getinfo( $ch, CURLINFO_HTTP_CODE );
-		curl_close( $ch );
-		if ( $responseCode != 200 ) {
-			throw new Exception( "SmartAccounts call failed: $responseCode. $server_output" );
+		$response        = wp_remote_post( $url, $args );
+		$response_code   = wp_remote_retrieve_response_code( $response );
+		$saResponse      = wp_remote_retrieve_body( $response );
+		$decodedResponse = json_decode( $saResponse, true );
+
+		if ( ! in_array( $response_code, array( 200, 201 ) ) || is_wp_error( $saResponse ) ) {
+			throw new Exception( "SmartAccounts call failed: $response_code" . print_r( $response, true ) );
 		}
 
-		$saResponse = json_decode( $server_output, true );
-
-		return $saResponse;
+		return $decodedResponse;
 	}
 }
