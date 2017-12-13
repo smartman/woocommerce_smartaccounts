@@ -40,7 +40,7 @@ class SmartAccountsClient {
 	 * current WooCommerce order do not exist then will create new client.
 	 * Comparison is done with name, country and e-mail
 	 *
-	 * @return SmartAccounts customer array
+	 * @return SmartAccountsClass customer array
 	 */
 	public function getClient() {
 		$apiUrl  = "purchasesales/clients:get";

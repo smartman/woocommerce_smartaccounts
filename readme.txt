@@ -9,8 +9,8 @@ This plugin creates sales invoices in the smartaccounts.ee Online Accounting Sof
 
 == Description ==
 
-After woocommerce order goes to status processing then this plugin:
-* Creates customer to SmartAccounts if no existing customer with same name and e-mail found
+After woocommerce order goes to status "Processing" then this plugin:
+* Creates Customer to SmartAccounts if no existing customer with same name and e-mail found
 * Creates Articles in Smartaccounts of Woocommerce product on the order if existing products are not found.
  Woocommerce product SKU is compared with SmartAccounts article code.
 * Creates sales in invoice and connects it with the right customer and adds all the Articles on the invoice.

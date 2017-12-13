@@ -17,9 +17,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 } // Exit if accessed directly
 
-require_once( 'SmartAccounts.php' );
+require_once( 'SmartAccountsClass.php' );
 
-add_action( 'admin_menu', 'SmartAccounts::optionsPage' );
+add_action( 'admin_menu', 'SmartAccountsClass::optionsPage' );
 
-add_action( 'admin_init', 'SmartAccounts::registerSettings' );
-add_action( 'woocommerce_order_status_processing', 'SmartAccounts::orderStatusProcessing' );
+add_action( 'admin_init', 'SmartAccountsClass::registerSettings' );
+add_action( 'woocommerce_order_status_processing', 'SmartAccountsClass::orderStatusProcessing' );

@@ -7,7 +7,7 @@ include_once( 'SmartAccountsPayment.php' );
 include_once( 'SmartAccountsArticle.php' );
 include_once( dirname( __FILE__ ) . '/../woocommerce/woocommerce.php' );
 
-class SmartAccounts {
+class SmartAccountsClass {
 
 	public static function orderStatusProcessing( $orderId ) {
 		//try catch makes sure your store will operate even if there are errors
@@ -33,7 +33,7 @@ class SmartAccounts {
 	}
 
 	function optionsPage() {
-		add_submenu_page( 'woocommerce', 'SmartAccounts settings', "SmartAccounts", 'manage_woocommerce', 'smartaccounts', 'SmartAccounts::options_page_html' );
+		add_submenu_page( 'woocommerce', 'SmartAccounts settings', "SmartAccounts", 'manage_woocommerce', 'SmartAccounts', 'SmartAccountsClass::options_page_html' );
 	}
 
 	function options_page_html() {
