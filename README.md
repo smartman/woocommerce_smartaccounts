@@ -4,8 +4,8 @@ This plugin creates sales invoices in the smartaccounts.ee Online Accounting Sof
 
 ## Description
 
-After new woocommerce order goes to status processing then this plugin:
-* Creates customer to SmartAccounts if no existing customer with same name and e-mail found
+After woocommerce order goes to status "Processing" or "Completed" then this plugin:
+* Creates Customer to SmartAccounts if no existing customer with same name and e-mail found
 * Creates Articles in Smartaccounts of Woocommerce product on the order if existing products are not found.
  Woocommerce product SKU is compared with SmartAccounts article code.
 * Creates sales in invoice and connects it with the right customer and adds all the Articles on the invoice.
@@ -17,20 +17,19 @@ Contact plugin author <b>margus.pala@gmail.com</b> to get support and share idea
 
 ## Installation
 
-Configuration is needed to make this plugin work. After actvating the plugin find its configuration page under Woocommerce menu item and:
+Configuration is needed to make this plugin work. After activating the plugin find its configuration page under Woocommerce menu item and:
 
 * Make sure you have SmartAccounts package with API access
-* Copy SmartAccounts API key and secret from SmartAccounts interface.
+* Copy SmartAccounts API key and secret from SmartAccounts interface. If you don't have SmartAccounts API key (please check Settings - Connected Services) you can contact SmartAccounts support to enable API service for your account. Additional conditions and charges may apply to API service.
 * Add bank account name you want to be used when making the invoices paid
+* You can also change SmartAccounts code for shipping
 
 ## Frequently Asked Questions
 
 ### What are the plugin limitations? 
-* This plugin creates sales invoice to SmartAccounts platform every time when order is changed into "Processing" status.
-Duplicate invoices could be created if order is changed to Processing status many times.
+* This plugin creates sales invoice to SmartAccounts platform only first time when order is changed into "Processing" or "Completed" status.
 * Invoice is always marked paid regardless if the payment is actually made or not yet. For example if Cash on Delivery payment method is used.
 * Order changes and cancelling is not handled automatically
-* Shipping item has code "shipping"
 * All items have one VAT percentage
 * SmartAccounts article code must be added to the Woocommerce product SKU if existing SmartAccounts article must be used
 * If product is not found then "Woocommerce product NAME" Article is created to SmartAccounts

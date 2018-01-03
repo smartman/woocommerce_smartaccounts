@@ -10,7 +10,7 @@ class SmartAccountsClient {
 	protected $email;
 	protected $name;
 	protected $country;
-
+	protected $isCompany;
 	protected $api;
 
 
@@ -22,12 +22,15 @@ class SmartAccountsClient {
 	public function __construct( $order ) {
 		$this->country     = $order->get_billing_country();
 		$this->email       = $order->get_billing_email();
+		$this->isCompany   = strlen( $order->get_billing_company() ) > 0;
 		$firstName         = strlen( $order->get_shipping_first_name() ) == 0 ? $order->get_billing_first_name() : $order->get_shipping_first_name();
 		$lastName          = strlen( $order->get_shipping_last_name() ) == 0 ? $order->get_billing_last_name() : $order->get_shipping_last_name();
 		$this->isAnonymous = ( ! $firstName || ! $lastName );
 
 		if ( $this->isAnonymous ) {
 			$this->name = "WooCommerce User $this->country";
+		} else if ( $this->isCompany ) {
+			$this->name = $order->get_billing_company();
 		} else {
 			$this->name = "$firstName $lastName";
 		}
@@ -113,7 +116,8 @@ class SmartAccountsClient {
 		}
 
 		foreach ( $clients as $client ) {
-			if ( $this->hasEmail( $client, $email ) && $this->name == $client["name"] ) {
+			//match client if name matches and is company or email also matches
+			if ( ( $this->isCompany || $this->hasEmail( $client, $email ) ) && strtolower( $this->name ) == strtolower( $client["name"] ) ) {
 				return $client;
 			}
 		}

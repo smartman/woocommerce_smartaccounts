@@ -15,11 +15,14 @@ class SmartAccountsSalesInvoice {
 	public function saveInvoice() {
 		$apiUrl = "purchasesales/clientinvoices:add";
 
-		$body           = new stdClass();
-		$body->clientId = $this->client["id"];
-		$body->date     = $this->order->get_date_created()->date( "d.m.Y" );
-		$body->currency = $this->order->get_currency();
-		$body->rows     = $this->getOrderRows();
+		$body              = new stdClass();
+		$body->clientId    = $this->client["id"];
+		$body->date        = $this->order->get_date_created()->date( "d.m.Y" );
+		$body->currency    = $this->order->get_currency();
+		$body->rows        = $this->getOrderRows();
+		$body->roundAmount = $this->getRoundingAmount( $body->rows );
+		$body->amount      = number_format( $this->getOrderTotal(), 2 );
+		$body->invoiceNote = "WooCommerce order #" . $this->order->get_id();
 
 		$saArticle = new SmartAccountsArticle();
 		$saArticle->ensureAllArticlesExist( $body->rows );
@@ -29,29 +32,55 @@ class SmartAccountsSalesInvoice {
 		return [ "invoice" => $salesInvoice, "rows" => $body->rows ];
 	}
 
+	public function getRoundingAmount( $rows ) {
+		$rowsTotal = 0;
+		foreach ( $rows as $row ) {
+			$rowsTotal += $row->totalCents;
+			$rowsTotal += $row->taxCents;
+		}
+
+		$roundingAmount = number_format( ( $this->getOrderTotal() * 100 + $this->getTotalTax() * 100 - $rowsTotal ) / 100, 2 );
+
+		return $roundingAmount;
+	}
+
+	public function getTotalTax() {
+		return floatval( $this->order->get_total_tax() );
+	}
+
+	public function getOrderTotal() {
+		return $this->order->get_subtotal() + $this->order->get_shipping_total();
+	}
 
 	private function getOrderRows() {
 		$rows     = [];
-		$totalTax = floatval( $this->order->get_total_tax() );
-		$subTotal = $this->order->get_subtotal() + $this->order->get_shipping_total();
+		$totalTax = $this->getTotalTax();
+		$subTotal = $this->getOrderTotal();
 		$vatPc    = round( $totalTax * 100 / $subTotal );
 		foreach ( $this->order->get_items() as $item ) {
 			$row              = new stdClass();
 			$row->code        = $item->get_product()->get_sku();
-			$row->description = strlen( $item->get_product()->get_description() ) == 0 ? "Woocommerce product " . $item->get_product()->get_name() : $item->get_product()->get_description();
-			$row->price       = $item->get_product()->get_price();
+			$row->description = strlen( $item->get_product()->get_description() ) == 0 ? $item->get_product()->get_name() : $item->get_product()->get_description();
 			$row->quantity    = $item->get_quantity();
-			$row->vatPc       = $vatPc;
-			$rows[]           = $row;
+
+			$rowPrice = $item->get_total() / $item->get_quantity();
+
+			$row->price      = number_format( $rowPrice, 2 );
+			$row->vatPc      = $vatPc;
+			$row->totalCents = intval( round( floatval( $row->price ) * $row->quantity * 100 ) );
+			$row->taxCents   = intval( round( $row->totalCents * $vatPc / 100 ) );
+			$rows[]          = $row;
 		}
 
 		if ( $this->order->get_shipping_total() > 0 ) {
 			$row              = new stdClass();
-			$row->code        = "shipping";
+			$row->code        = get_option( 'sa_api_shipping_code' );
 			$row->description = "Woocommerce Shipping";
 			$row->price       = $this->order->get_shipping_total();
 			$row->quantity    = 1;
 			$row->vatPc       = $vatPc;
+			$row->totalCents  = intval( round( floatval( $row->price ) * $row->quantity * 100 ) );
+			$row->taxCents    = intval( round( $row->totalCents * $vatPc / 100 ) );
 			$rows[]           = $row;
 		}
 

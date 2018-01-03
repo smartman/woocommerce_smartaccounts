@@ -20,7 +20,7 @@ class SmartAccountsArticle {
 				$body              = new stdClass();
 				$body->code        = $row->code;
 				$body->description = $row->description;
-				$body->type        = $row->code == "shipping" ? "SERVICE" : "PRODUCT";
+				$body->type        = $row->code == get_option( 'sa_api_shipping_code' ) ? "SERVICE" : "PRODUCT";
 				$body->activeSales = true;
 				$this->api->sendRequest( $body, $addApiUrl );
 			}
