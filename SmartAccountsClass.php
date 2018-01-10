@@ -14,7 +14,6 @@ class SmartAccountsClass {
 		//try catch makes sure your store will operate even if there are errors
 		try {
 			$order = new WC_Order( $order_id );
-
 			if ( strlen( get_post_meta( $order_id, 'smartaccounts_invoice_id', true ) ) > 0 ) {
 				return; //Smartaccounts order is already created
 			}
@@ -28,7 +27,8 @@ class SmartAccountsClass {
 			$saPayment->createPayment();
 			update_post_meta( $order_id, 'smartaccounts_invoice_id', $invoice['invoice']['invoiceNumber'] );
 		} catch ( Exception $exception ) {
-			$handle = fopen( 'error.log', 'a' );
+			$handle = fopen( dirname( __FILE__ ) . "/error.log", 'a' );
+
 			if ( $handle ) {
 				fwrite( $handle, $exception->getMessage() );
 				fwrite( $handle, $exception->getTraceAsString() );
