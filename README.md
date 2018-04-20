@@ -32,6 +32,7 @@ Configuration is needed to make this plugin work. After activating the plugin fi
 * Order changes and cancelling is not handled automatically
 * All items have one VAT percentage
 * SmartAccounts article code must be added to the Woocommerce product SKU if existing SmartAccounts article must be used
+* If no sku is added to product then product code wc_product_XXX is used where XXX is product ID
 * If product is not found then "Woocommerce product NAME" Article is created to SmartAccounts
 * Plugin does not handle errors which come from exceeding rate limits or unpaid SmartAccounts invoices.
 * If there are errors then invoices might be missing and rest of the Woocommerce functionality keeps on working
