@@ -14,6 +14,8 @@ class SmartAccountsClient
     protected $isCompany;
     protected $api;
 
+    protected $generalUserName = "WooCommerce User";
+
 
     /**
      * SmartAccountsClient constructor.
@@ -22,7 +24,10 @@ class SmartAccountsClient
      */
     public function __construct($order)
     {
-        $this->country     = $order->get_billing_country();
+        $this->country = $order->get_billing_country();
+        if ($this->country == null || strlen($this->country) == 0) {
+            $this->country = $order->get_shipping_country();
+        }
         $this->email       = $order->get_billing_email();
         $this->isCompany   = strlen($order->get_billing_company()) > 0;
         $firstName         = strlen($order->get_shipping_first_name()) == 0 ? $order->get_billing_first_name() : $order->get_shipping_first_name();
@@ -30,7 +35,7 @@ class SmartAccountsClient
         $this->isAnonymous = ( ! $firstName || ! $lastName);
 
         if ($this->isAnonymous) {
-            $this->name = "WooCommerce User $this->country";
+            $this->name = trim("$this->generalUserName $this->country");
         } else if ($this->isCompany) {
             $this->name = $order->get_billing_company();
         } else {
@@ -76,7 +81,11 @@ class SmartAccountsClient
     private function isGeneralCountryClient($client, $country)
     {
         if ( ! array_key_exists("address", $client)) {
-            return false;
+            if ($client['name'] == $this->generalUserName) {
+                return true;
+            } else {
+                return false;
+            }
         }
 
         foreach ($client["address"] as $key => $value) {
