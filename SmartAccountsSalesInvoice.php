@@ -66,14 +66,26 @@ class SmartAccountsSalesInvoice
         $subTotal = $this->getOrderTotal();
         $vatPc    = round($totalTax * 100 / $subTotal);
         foreach ($this->order->get_items() as $item) {
-            $code = $item->get_product()->get_sku();
-            if ($code == null || strlen($code) == 0) {
-                $code = "wc_product_" . $item->get_product()->get_id();
+            $product = $item->get_product();
+            $row     = new stdClass();
+            if ($product == null) {
+                error_log("SA Product not found for order item " . $item->get_id());
+                $row->description = $item->get_name();
+                $code             = "wc_missing_product_" . $item->get_id();
+            } else {
+                $code = $product->get_sku();
+                if ($code == null || strlen($code) == 0) {
+                    $code = "wc_product_" . $product->get_id();
+                }
+                $row->description = strlen($product->get_description()) == 0 ? $product->get_name() : $product->get_description();
             }
-            $row              = new stdClass();
-            $row->code        = $code;
-            $row->description = strlen($item->get_product()->get_description()) == 0 ? $item->get_product()->get_name() : $item->get_product()->get_description();
-            $row->quantity    = $item->get_quantity();
+
+            if (strlen($row->description) == 0) {
+                $row->description = $code;
+            }
+
+            $row->code     = $code;
+            $row->quantity = $item->get_quantity();
 
             $rowPrice = $item->get_total() / $item->get_quantity();
 
