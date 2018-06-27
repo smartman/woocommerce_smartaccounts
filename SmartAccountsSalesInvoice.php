@@ -56,7 +56,7 @@ class SmartAccountsSalesInvoice
 
     public function getOrderTotal()
     {
-        return $this->order->get_subtotal() + $this->order->get_shipping_total();
+        return $this->order->get_subtotal() + $this->order->get_shipping_total() - $this->order->get_discount_total();
     }
 
     private function getOrderRows()

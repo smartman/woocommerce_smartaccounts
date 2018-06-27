@@ -27,7 +27,8 @@ class SmartAccountsApi
 
         $args = array(
             'body'    => $bodyJson,
-            'headers' => ['Content-Type' => 'application/json']
+            'headers' => ['Content-Type' => 'application/json'],
+            'timeout' => 60
         );
 
         $response        = wp_remote_post($url, $args);

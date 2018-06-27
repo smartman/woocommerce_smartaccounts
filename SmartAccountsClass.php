@@ -25,15 +25,9 @@ class SmartAccountsClass
             $saPayment = new SmartAccountsPayment($order, $invoice);
             $saPayment->createPayment();
             update_post_meta($order_id, 'smartaccounts_invoice_id', $invoice['invoice']['invoiceNumber']);
+            error_log("SmartAccounts sales invoice created for order $order_id - " . $invoice['invoice']['invoiceNumber']);
         } catch (Exception $exception) {
-            $handle = fopen(dirname(__FILE__) . "/error.log", 'a');
-
-            if ($handle) {
-                fwrite($handle, new DateTime());
-                fwrite($handle, "Error reason: " . $exception->getMessage());
-                fwrite($handle, $exception->getTraceAsString());
-                fclose($handle);
-            }
+            error_log("SmartAccounts error: " . $exception->getMessage() . " " . $exception->getTraceAsString());
         }
     }
 
