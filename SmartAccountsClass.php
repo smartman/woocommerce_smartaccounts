@@ -14,6 +14,8 @@ class SmartAccountsClass
         try {
             $order = wc_get_order($order_id);
             if (strlen(get_post_meta($order_id, 'smartaccounts_invoice_id', true)) > 0) {
+	            error_log( "SmartAccounts orderr $order_id already sent, not sending again, SA id="
+	                       . get_post_meta( $order_id, 'smartaccounts_invoice_id', true ) );
                 return; //Smartaccounts order is already created
             }
 

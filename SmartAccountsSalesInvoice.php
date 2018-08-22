@@ -77,7 +77,7 @@ class SmartAccountsSalesInvoice
                 if ($code == null || strlen($code) == 0) {
                     $code = "wc_product_" . $product->get_id();
                 }
-                $row->description = strlen($product->get_description()) == 0 ? $product->get_name() : $product->get_description();
+	            $row->description = strlen( $product->get_name() ) == 0 ? $product->get_description() : $product->get_name();
             }
 
             if (strlen($row->description) == 0) {
