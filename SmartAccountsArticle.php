@@ -18,7 +18,7 @@ class SmartAccountsArticle
         $addApiUrl = "purchasesales/articles:add";
         foreach ($rows as $row) {
             $body     = new stdClass();
-            $articles = $this->api->sendRequest($body, $getApiUrl, "code=$row->code");
+            $articles = $this->api->sendRequest($body, $getApiUrl, "code=" . urlencode($row->code));
             if ( ! (array_key_exists("articles", $articles) && count($articles["articles"]) == 1)) {
                 $body              = new stdClass();
                 $body->code        = $row->code;

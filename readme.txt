@@ -1,7 +1,7 @@
 === Plugin Name ===
 Tags: SmartAccounts, smartaccounts, WooCommerce
 Requires at least: 4.8
-Tested up to: 4.9.6
+Tested up to: 4.9.8
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -42,6 +42,10 @@ Invoice is always marked paid regardless if the payment is actually made or not 
 
 
 == Changelog ==
+
+=1.4=
+Can handle SKU with spaces
+Product name instead of long description in SmartAccounts row description
 
 =1.3=
 
