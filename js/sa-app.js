@@ -4,6 +4,7 @@ if (document.getElementById("sa-admin")) {
         el: '#sa-admin',
         created() {
             this.newCountryObject();
+            this.newCurrency();
 
             //make sure all payment methods aéxist for checkbox check
             for (const paymentMethodPaid of this.paymentMethods) {
@@ -29,13 +30,19 @@ if (document.getElementById("sa-admin")) {
             newCountryObject() {
                 this.settings.countryObjects.push({country: "", object_id: ""});
             },
+            newCurrency() {
+                this.settings.currencyBanks.push({currency_code: "", currency_bank: ""});
+            },
             removeCountryObject(id) {
                 this.settings.countryObjects.splice(id, 1);
+            },
+            removeCurrency(id) {
+                this.settings.currencyBanks.splice(id, 1);
             },
             saveSettings() {
                 axios.post(sa_settings.ajaxUrl + "?action=sa_save_settings", this.settings).then(
                     res => {
-                        this.settings = res.data.settings;
+                        // this.settings = res.data.settings;
                     });
             }
         },

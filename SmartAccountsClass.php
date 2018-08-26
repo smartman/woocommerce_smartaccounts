@@ -45,21 +45,32 @@ class SmartAccountsClass
         $settings->defaultPayment  = sanitize_text_field($unSanitized->defaultPayment);
         $settings->showAdvanced    = $unSanitized->showAdvanced == true;
 
-        $settings->paymentMethods = new stdClass();
-
+        $settings->paymentMethodsPaid = new stdClass();
         foreach ($unSanitized->paymentMethodsPaid as $key => $method) {
             $settings->paymentMethodsPaid->$key = $unSanitized->paymentMethodsPaid->$key == true;
         }
+
         $settings->countryObjects = [];
         foreach ($unSanitized->countryObjects as $countryObject) {
             $newCountryObject            = new stdClass();
             $newCountryObject->country   = sanitize_text_field($countryObject->country);
             $newCountryObject->object_id = sanitize_text_field($countryObject->object_id);
-            $newCountryObject->non_eu    = $countryObject->object_id == true;
+            $newCountryObject->non_eu    = $countryObject->non_eu == true;
             if ( ! $newCountryObject->country || ! $newCountryObject->object_id) {
                 continue;
             }
             array_push($settings->countryObjects, $newCountryObject);
+        }
+
+        $settings->currencyBanks = [];
+        foreach ($unSanitized->currencyBanks as $currencyBank) {
+            $newCurrencyBank                = new stdClass();
+            $newCurrencyBank->currency_code = sanitize_text_field($currencyBank->currency_code);
+            $newCurrencyBank->currency_bank = sanitize_text_field($currencyBank->currency_bank);
+            if ( ! $newCurrencyBank->currency_code || ! $newCurrencyBank->currency_bank) {
+                continue;
+            }
+            array_push($settings->currencyBanks, $newCurrencyBank);
         }
 
         update_option('sa_settings', json_encode($settings));
@@ -86,6 +97,9 @@ class SmartAccountsClass
         }
         if ( ! is_array($currentSettings->countryObjects)) {
             $currentSettings->countryObjects = [];
+        }
+        if ( ! is_array($currentSettings->currencyBanks)) {
+            $currentSettings->currencyBanks = [];
         }
 
         return $currentSettings;
@@ -211,40 +225,38 @@ class SmartAccountsClass
                 </button>
 
                 <h2>Currency bank accounts</h2>
-                <small>If invoice currency
+                <small>If currency bank account mapping is set then given bank account will be used for bank payment
+                    entry
                 </small>
                 <table class="form-table">
                     <thead>
                     <tr>
-                        <th>2 letter ISO ountry code</th>
-                        <th>Object ID</th>
-                        <th>Non EU</th>
+                        <th>Currency code</th>
+                        <th>SmartAccounts bank account name</th>
+                        <th></th>
                     </tr>
                     </thead>
-                    <tr valign="middle" v-for="(item, index) in settings.countryObjects">
+                    <tr valign="middle" v-for="(item, index) in settings.currencyBanks">
                         <th>
-                            <a @click="removeCountryObject(index)">X</a>
-                            <input :data-vv-name="'co_'+index"
-                                   v-validate="{regex: /^[A-Z]{2}$/}"
-                                   v-bind:class="{'notice notice-error':errors.first('co_'+index)}"
-                                   v-model="settings.countryObjects[index].country"
-                                   placeholder="EE"/>
+                            <a @click="removeCurrency(index)">X</a>
+                            <input :data-vv-name="'currency_code_'+index"
+                                   v-validate="{regex: /^[A-Z]{3}$/}"
+                                   v-bind:class="{'notice notice-error':errors.first('currency_code_'+index)}"
+                                   v-model="settings.currencyBanks[index].currency_code"
+                                   placeholder="EUR"/>
                         </th>
                         <td>
                             <input size="30"
-                                   :data-vv-name="'co_id_'+index"
-                                   v-validate="{regex: /^[a-z0-9]{8}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{12}$/}"
-                                   v-bind:class="{'notice notice-error':errors.first('co_id_'+index)}"
-                                   v-model="settings.countryObjects[index].object_id"
-                                   placeholder="7828f2d7-968f-442d-8d88-da18eee72434"/>
+                                   :data-vv-name="'currency_bank_'+index"
+                                   v-validate="{min: 2}"
+                                   v-bind:class="{'notice notice-error':errors.first('currency_bank_'+index)}"
+                                   v-model="settings.currencyBanks[index].currency_bank"
+                                   placeholder="LHV EUR"/>
                         </td>
-                        <td>
-                            <input type="checkbox" v-model="settings.countryObjects[index].non_eu">
-                        </td>
+                        <td></td>
                     </tr>
                 </table>
-                <button @click="newCountryObject" class="button-primary woocommerce-save-button">New country objects
-                    mapping
+                <button @click="newCurrency" class="button-primary woocommerce-save-button">New currency
                 </button>
 
             </div>
