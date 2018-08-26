@@ -27,6 +27,18 @@ class SmartAccountsSalesInvoice
         $body->amount      = number_format($this->getOrderTotal(), 2);
         $body->invoiceNote = "WooCommerce order #" . $this->order->get_id();
 
+        $settings = json_decode(get_option("sa_settings"));
+        if (is_array($settings->countryObjects) && isset($this->client['address']['country'])) {
+            $country  = $this->client['address']['country'];
+            $objectId = null;
+            foreach ($settings->countryObjects as $countryObject) {
+                if ($countryObject->country == $country) {
+                    $body->objectId = $countryObject->object_id;
+                    break;
+                }
+            }
+        }
+
         $saArticle = new SmartAccountsArticle();
         $saArticle->ensureAllArticlesExist($body->rows);
 

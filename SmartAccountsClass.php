@@ -51,6 +51,17 @@ class SmartAccountsClass
             $settings->paymentMethods->$key     = sanitize_text_field($method);
             $settings->paymentMethodsPaid->$key = $unSanitized->paymentMethodsPaid->$key == true;
         }
+        $settings->countryObjects = [];
+        foreach ($unSanitized->countryObjects as $countryObject) {
+            $newCountryObject            = new stdClass();
+            $newCountryObject->country   = sanitize_text_field($countryObject->country);
+            $newCountryObject->object_id = sanitize_text_field($countryObject->object_id);
+            $newCountryObject->non_eu    = $countryObject->object_id == true;
+            if ( ! $newCountryObject->country || ! $newCountryObject->object_id) {
+                continue;
+            }
+            array_push($settings->countryObjects, $newCountryObject);
+        }
 
         update_option('sa_settings', json_encode($settings));
 
@@ -74,6 +85,9 @@ class SmartAccountsClass
         if ( ! is_object($currentSettings->paymentMethodsPaid)) {
             $currentSettings->paymentMethodsPaid = new stdClass();
         }
+        if ( ! is_array($currentSettings->countryObjects)) {
+            $currentSettings->countryObjects = [];
+        }
 
         return $currentSettings;
     }
@@ -95,33 +109,49 @@ class SmartAccountsClass
 
             <h2>General settings</h2>
             <table class="form-table">
-                <tr valign="top">
+                <tr valign="middle">
                     <th>SmartAccounts public key</th>
                     <td>
-                        <input size="50" v-model="settings.apiKey"/>
+                        <input size="50"
+                               data-vv-name="apiKey"
+                               v-validate="'required'"
+                               v-bind:class="{'notice notice-error':errors.first('apiKey')}"
+                               v-model="settings.apiKey"/>
                     </td>
                 </tr>
 
-                <tr valign="top">
+                <tr valign="middle">
                     <th>SmartAccounts private key</th>
                     <td>
-                        <input size="50" v-model="settings.apiSecret"/>
+                        <input size="50"
+                               data-vv-name="apiSecret"
+                               v-validate="'required'"
+                               v-bind:class="{'notice notice-error':errors.first('apiSecret')}"
+                               v-model="settings.apiSecret"/>
                     </td>
                 </tr>
 
-                <tr valign="top">
+                <tr valign="middle">
                     <th>SmartAccounts shipping article name</th>
                     <td>
-                        <input size="50" v-model="settings.defaultShipping"/>
+                        <input size="50"
+                               data-vv-name="defaultShipping"
+                               v-validate="'required'"
+                               v-bind:class="{'notice notice-error':errors.first('defaultShipping')}"
+                               v-model="settings.defaultShipping"/>
                     </td>
                 </tr>
-                <tr valign="top">
+                <tr valign="middle">
                     <th>SmartAccounts payments default bank account name</th>
                     <td>
-                        <input size="50" v-model="settings.defaultPayment"/>
+                        <input size="50"
+                               data-vv-name="defaultPayment"
+                               v-validate="'required'"
+                               v-bind:class="{'notice notice-error':errors.first('defaultPayment')}"
+                               v-model="settings.defaultPayment"/>
                     </td>
                 </tr>
-                <tr valign="top">
+                <tr valign="middle">
                     <th>Show advanced settings</th>
                     <td>
                         <input type="checkbox" v-model="settings.showAdvanced"/>
@@ -144,13 +174,54 @@ class SmartAccountsClass
                                                              v-model="settings.paymentMethodsPaid[method]">
                         </td>
                     </tr>
-
                 </table>
+
+                <h2>Country objects</h2>
+                <small>If customer country mapping exists then following object ID is set when creating sales invoice to
+                    SmartAccounts
+                </small>
+                <table class="form-table">
+                    <thead>
+                    <tr>
+                        <th>2 letter ISO ountry code</th>
+                        <th>Object ID</th>
+                        <th>Non EU</th>
+                    </tr>
+                    </thead>
+                    <tr valign="middle" v-for="(item, index) in settings.countryObjects">
+                        <th>
+                            <a @click="removeCountryObject(index)">X</a>
+                            <input :data-vv-name="'co_'+index"
+                                   v-validate="{regex: /^[A-Z]{2}$/}"
+                                   v-bind:class="{'notice notice-error':errors.first('co_'+index)}"
+                                   v-model="settings.countryObjects[index].country"
+                                   placeholder="EE"/>
+                        </th>
+                        <td>
+                            <input size="30"
+                                   :data-vv-name="'co_id_'+index"
+                                   v-validate="{regex: /^[a-z0-9]{8}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{12}$/}"
+                                   v-bind:class="{'notice notice-error':errors.first('co_id_'+index)}"
+                                   v-model="settings.countryObjects[index].object_id"
+                                   placeholder="7828f2d7-968f-442d-8d88-da18eee72434"/>
+                        </td>
+                        <td>
+                            <input type="checkbox" v-model="settings.countryObjects[index].non_eu">
+                        </td>
+                    </tr>
+                </table>
+                <button @click="newCountryObject" class="button-primary woocommerce-save-button">New country objects
+                    mapping
+                </button>
             </div>
+            <br>
             <button @click="saveSettings" class="button-primary woocommerce-save-button" :disabled="!formValid">Save
                 settings
             </button>
-            <small v-if="!formValid">All general settings are required</small>
+            <div v-if="!formValid" class="notice notice-error">
+                <small>All general settings are required and filled fields correct</small>
+            </div>
+
 
         </div>
         <?php
@@ -162,9 +233,11 @@ class SmartAccountsClass
         wp_register_script('sa_vue_js', plugins_url('js/sa-vue.js', __FILE__));
         wp_register_script('sa_axios_js', plugins_url('js/sa-axios.min.js', __FILE__));
         wp_register_script('sa_app_js', plugins_url('js/sa-app.js', __FILE__));
+        wp_register_script('sa_vee_validate', plugins_url('js/sa-vee-validate.js', __FILE__));
 
         wp_enqueue_script('sa_vue_js');
         wp_enqueue_script('sa_axios_js');
+        wp_enqueue_script('sa_vee_validate', false, ['sa_vue_js'], null, true);
         wp_enqueue_script('sa_app_js', false, ['sa_vue_js', 'sa_axios_js'], null, true);
 
         wp_localize_script("sa_app_js",
