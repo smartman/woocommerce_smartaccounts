@@ -19,11 +19,12 @@ class SmartAccountsArticle
         foreach ($rows as $row) {
             $body     = new stdClass();
             $articles = $this->api->sendRequest($body, $getApiUrl, "code=" . urlencode($row->code));
+            $settings = json_decode(get_option("sa_settings"));
             if ( ! (array_key_exists("articles", $articles) && count($articles["articles"]) == 1)) {
                 $body              = new stdClass();
                 $body->code        = $row->code;
                 $body->description = $row->description;
-                $body->type        = $row->code == get_option('sa_api_shipping_code') ? "SERVICE" : "PRODUCT";
+                $body->type        = $row->code == $settings->defaultShipping ? "SERVICE" : "PRODUCT";
                 $body->activeSales = true;
                 $this->api->sendRequest($body, $addApiUrl);
             }

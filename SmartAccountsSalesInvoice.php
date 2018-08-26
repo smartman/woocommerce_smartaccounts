@@ -77,7 +77,7 @@ class SmartAccountsSalesInvoice
                 if ($code == null || strlen($code) == 0) {
                     $code = "wc_product_" . $product->get_id();
                 }
-	            $row->description = strlen( $product->get_name() ) == 0 ? $product->get_description() : $product->get_name();
+                $row->description = strlen($product->get_name()) == 0 ? $product->get_description() : $product->get_name();
             }
 
             if (strlen($row->description) == 0) {
@@ -97,8 +97,9 @@ class SmartAccountsSalesInvoice
         }
 
         if ($this->order->get_shipping_total() > 0) {
+            $settings         = json_decode(get_option("sa_settings"));
             $row              = new stdClass();
-            $row->code        = get_option('sa_api_shipping_code');
+            $row->code        = $settings->defaultShipping;
             $row->description = "Woocommerce Shipping";
             $row->price       = $this->order->get_shipping_total();
             $row->quantity    = 1;

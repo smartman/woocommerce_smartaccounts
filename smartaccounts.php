@@ -30,11 +30,13 @@ function smartaccounts_missing_wc_admin_notice()
 if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_option('active_plugins')))) {
     require_once('SmartAccountsClass.php');
 
+    add_action('admin_enqueue_scripts', 'SmartAccountsClass::enqueueScripts');
     add_action('admin_menu', 'SmartAccountsClass::optionsPage');
 
-    add_action('admin_init', 'SmartAccountsClass::registerSettings');
     add_action('woocommerce_order_status_processing', 'SmartAccountsClass::orderStatusProcessing');
     add_action('woocommerce_order_status_completed', 'SmartAccountsClass::orderStatusProcessing');
+
+    add_action("wp_ajax_sa_save_settings", "SmartAccountsClass::saveSettings");
 } else {
     add_action('admin_notices', 'smartaccounts_missing_wc_admin_notice');
 }

@@ -14,8 +14,9 @@ class SmartAccountsApi
         }
         $now = new DateTime();
         $now->setTimezone(new DateTimeZone('Europe/Tallinn'));
-        $pk = get_option("sa_api_pk");
-        $sk = get_option("sa_api_sk");
+        $settings = json_decode(get_option("sa_settings"));
+        $pk       = $settings->apiKey;
+        $sk       = $settings->apiSecret;
 
         $bodyJson  = json_encode($body);
         $ts        = $now->format("dmYHis");
