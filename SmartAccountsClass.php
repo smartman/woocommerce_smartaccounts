@@ -119,6 +119,14 @@ class SmartAccountsClass
         </style>
         <div id="sa-admin" class="wrap">
             <h1><?= esc_html(get_admin_page_title()); ?></h1>
+            <hr>
+
+            <button @click="saveSettings" class="button-primary woocommerce-save-button" :disabled="!formValid">Save
+                settings
+            </button>
+            <div v-if="!formValid" class="notice notice-error">
+                <small>All general settings are required and filled fields correct</small>
+            </div>
 
             <h2>General settings</h2>
             <table class="form-table">
@@ -172,6 +180,7 @@ class SmartAccountsClass
                 </tr>
             </table>
 
+            <hr>
             <div v-show="settings.showAdvanced">
                 <h2>Payment methods</h2>
                 <small>Configure which payment methods are paid immediately and invoices can be created with payments
@@ -185,7 +194,8 @@ class SmartAccountsClass
                         </td>
                     </tr>
                 </table>
-
+                <br>
+                <hr>
                 <h2>Country objects</h2>
                 <small>If customer country mapping exists then following object ID is set when creating sales invoice to
                     SmartAccounts
@@ -224,6 +234,9 @@ class SmartAccountsClass
                     mapping
                 </button>
 
+                <br>
+                <br>
+                <hr>
                 <h2>Currency bank accounts</h2>
                 <small>If currency bank account mapping is set then given bank account will be used for bank payment
                     entry
@@ -261,6 +274,7 @@ class SmartAccountsClass
 
             </div>
             <br>
+            <hr>
             <button @click="saveSettings" class="button-primary woocommerce-save-button" :disabled="!formValid">Save
                 settings
             </button>
