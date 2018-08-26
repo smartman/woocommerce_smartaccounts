@@ -14,13 +14,10 @@ class SmartAccountsPayment
     {
         $settings           = json_decode(get_option("sa_settings"));
         $orderPaymentMethod = $this->order->get_payment_method_title();
-        if (isset($settings->paymentMethods) && $settings->paymentMethods->$orderPaymentMethod) {
-            $paymentMethod = $settings->paymentMethods->$orderPaymentMethod;
-            if ( ! isset($settings->paymentMethodsPaid) || ! $settings->paymentMethodsPaid->$orderPaymentMethod) {
-                error_log("Payment method $orderPaymentMethod is not allowed to be marked paid");
+        if (isset($settings->paymentMethodsPaid) && ! $settings->paymentMethodsPaid->$orderPaymentMethod) {
+            error_log("Payment method $orderPaymentMethod is not allowed to be marked paid");
 
-                return;
-            }
+            return;
         } else {
             $paymentMethod = $settings->defaultPayment;
         }

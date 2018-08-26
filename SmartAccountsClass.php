@@ -47,8 +47,7 @@ class SmartAccountsClass
 
         $settings->paymentMethods = new stdClass();
 
-        foreach ($unSanitized->paymentMethods as $key => $method) {
-            $settings->paymentMethods->$key     = sanitize_text_field($method);
+        foreach ($unSanitized->paymentMethodsPaid as $key => $method) {
             $settings->paymentMethodsPaid->$key = $unSanitized->paymentMethodsPaid->$key == true;
         }
         $settings->countryObjects = [];
@@ -161,17 +160,14 @@ class SmartAccountsClass
 
             <div v-show="settings.showAdvanced">
                 <h2>Payment methods</h2>
-                <small>Which payment methods in WooCommerce match which in SmartAccounts. If mapping missing then
-                    default is used. Last checkbox tells if payment should be created for orders with this payment
-                    method.
+                <small>Configure which payment methods are paid immediately and invoices can be created with payments
                 </small>
                 <table class="form-table">
                     <tr valign="top" v-for="method in paymentMethods">
                         <th>Method: {{method}}</th>
                         <td>
-                            <input size="50" v-model="settings.paymentMethods[method]"/>
-                            <label>Mark paid? </label><input type="checkbox"
-                                                             v-model="settings.paymentMethodsPaid[method]">
+                            <label>Mark paid? </label>
+                            <input type="checkbox" v-model="settings.paymentMethodsPaid[method]">
                         </td>
                     </tr>
                 </table>
@@ -213,6 +209,44 @@ class SmartAccountsClass
                 <button @click="newCountryObject" class="button-primary woocommerce-save-button">New country objects
                     mapping
                 </button>
+
+                <h2>Currency bank accounts</h2>
+                <small>If invoice currency
+                </small>
+                <table class="form-table">
+                    <thead>
+                    <tr>
+                        <th>2 letter ISO ountry code</th>
+                        <th>Object ID</th>
+                        <th>Non EU</th>
+                    </tr>
+                    </thead>
+                    <tr valign="middle" v-for="(item, index) in settings.countryObjects">
+                        <th>
+                            <a @click="removeCountryObject(index)">X</a>
+                            <input :data-vv-name="'co_'+index"
+                                   v-validate="{regex: /^[A-Z]{2}$/}"
+                                   v-bind:class="{'notice notice-error':errors.first('co_'+index)}"
+                                   v-model="settings.countryObjects[index].country"
+                                   placeholder="EE"/>
+                        </th>
+                        <td>
+                            <input size="30"
+                                   :data-vv-name="'co_id_'+index"
+                                   v-validate="{regex: /^[a-z0-9]{8}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{12}$/}"
+                                   v-bind:class="{'notice notice-error':errors.first('co_id_'+index)}"
+                                   v-model="settings.countryObjects[index].object_id"
+                                   placeholder="7828f2d7-968f-442d-8d88-da18eee72434"/>
+                        </td>
+                        <td>
+                            <input type="checkbox" v-model="settings.countryObjects[index].non_eu">
+                        </td>
+                    </tr>
+                </table>
+                <button @click="newCountryObject" class="button-primary woocommerce-save-button">New country objects
+                    mapping
+                </button>
+
             </div>
             <br>
             <button @click="saveSettings" class="button-primary woocommerce-save-button" :disabled="!formValid">Save
