@@ -32,12 +32,13 @@ class SmartAccountsClient
         $this->isCompany   = strlen($order->get_billing_company()) > 0;
         $firstName         = strlen($order->get_shipping_first_name()) == 0 ? $order->get_billing_first_name() : $order->get_shipping_first_name();
         $lastName          = strlen($order->get_shipping_last_name()) == 0 ? $order->get_billing_last_name() : $order->get_shipping_last_name();
-        $this->isAnonymous = ( ! $firstName || ! $lastName);
 
-        if ($this->isAnonymous) {
-            $this->name = trim("$this->generalUserName $this->country");
-        } else if ($this->isCompany) {
+        $this->isAnonymous = ( ! $firstName && ! $lastName);
+
+        if ($this->isCompany) {
             $this->name = $order->get_billing_company();
+        } else if ($this->isAnonymous) {
+            $this->name = trim("$this->generalUserName $this->country");
         } else {
             $this->name = "$firstName $lastName";
         }
