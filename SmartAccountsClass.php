@@ -318,7 +318,7 @@ class SmartAccountsClass
 
     public static function getAvailablePaymentMethods()
     {
-        $gateways         = WC()->payment_gateways->get_available_payment_gateways();
+        $gateways         = WC()->payment_gateways->payment_gateways();
         $enabled_gateways = [];
 
         if ($gateways) {
