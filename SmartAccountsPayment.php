@@ -25,7 +25,7 @@ class SmartAccountsPayment
         $paymentMethod     = null;
         if (is_array($settings->currencyBanks)) {
             foreach ($settings->currencyBanks as $bank) {
-                if ($bank->currency_code == $orderCurrencyCode) {
+                if ($bank->currency_code == $orderCurrencyCode && $bank->payment_method == $orderPaymentMethod) {
                     $paymentMethod = $bank->currency_bank;
                     break;
                 }
