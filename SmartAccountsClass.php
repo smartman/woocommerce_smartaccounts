@@ -14,12 +14,12 @@ class SmartAccountsClass
         try {
             $order = wc_get_order($order_id);
 
-            if (strlen(get_post_meta($order_id, 'smartaccounts_invoice_id', true)) > 0) {
-                error_log("SmartAccounts order $order_id already sent, not sending again, SA id="
-                          . get_post_meta($order_id, 'smartaccounts_invoice_id', true));
-
-                return; //Smartaccounts order is already created
-            }
+//            if (strlen(get_post_meta($order_id, 'smartaccounts_invoice_id', true)) > 0) {
+//                error_log("SmartAccounts order $order_id already sent, not sending again, SA id="
+//                          . get_post_meta($order_id, 'smartaccounts_invoice_id', true));
+//
+//                return; //Smartaccounts order is already created
+//            }
 
             $saClient       = new SmartAccountsClient($order);
             $client         = $saClient->getClient();
@@ -67,6 +67,23 @@ class SmartAccountsClass
                 continue;
             }
             array_push($settings->currencyBanks, $newCurrencyBank);
+        }
+
+        $allowedStatuses = [
+            'pending',
+            'processing',
+            'completed',
+            'on-hold'
+        ];
+
+        $settings->statuses = [];
+        foreach ($unSanitized->statuses as $status) {
+            if (in_array($status, $allowedStatuses)) {
+                $settings->statuses[] = $status;
+            }
+        }
+        if (count($settings->statuses) == 0) {
+            $settings->statuses = ['completed', 'processing'];
         }
 
         update_option('sa_settings', json_encode($settings));
@@ -191,6 +208,19 @@ class SmartAccountsClass
 
             <hr>
             <div v-show="settings.showAdvanced">
+                <h2>Order statuses to send to SmartAccounts</h2>
+                <small>If none selected then default Processing and Completed are used. Use CTRL+click to choose
+                    multiple values
+                </small>
+                <br><br>
+                <select v-model="settings.statuses" multiple>
+                    <option value="pending">Pending</option>
+                    <option value="processing">Processing</option>
+                    <option value="on-hold">On hold</option>
+                    <option value="completed">Completed</option>
+                </select>
+
+                <hr>
                 <h2>Payment methods</h2>
                 <small>Configure which payment methods are paid immediately and invoices can be created with payments
                 </small>

@@ -3,7 +3,7 @@
  * Plugin Name: SmartAccounts
  * Plugin URI: https://github.com/smartman/woocommerce_smartaccounts
  * Description: This plugin creates sales invoices in the smartaccounts.ee Online Accounting Software after Woocommerce order creation
- * Version: 2.1
+ * Version: 99.99
  * Author: Margus Pala
  * Author URI: https://marguspala.com
  * License: GPLv2 or later
@@ -33,8 +33,15 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
     add_action('admin_enqueue_scripts', 'SmartAccountsClass::enqueueScripts');
     add_action('admin_menu', 'SmartAccountsClass::optionsPage');
 
-    add_action('woocommerce_order_status_processing', 'SmartAccountsClass::orderStatusProcessing');
-    add_action('woocommerce_order_status_completed', 'SmartAccountsClass::orderStatusProcessing');
+    $settings = json_decode(get_option('sa_settings'));
+    if ( ! $settings || ! $settings->statuses || ! is_array($settings->statuses) || count($settings->statuses) == 0) {
+        add_action('woocommerce_order_status_processing', 'SmartAccountsClass::orderStatusProcessing');
+        add_action('woocommerce_order_status_completed', 'SmartAccountsClass::orderStatusProcessing');
+    } else {
+        foreach ($settings->statuses as $status) {
+            add_action("woocommerce_order_status_$status", 'SmartAccountsClass::orderStatusProcessing');
+        }
+    }
 
     add_action("wp_ajax_sa_save_settings", "SmartAccountsClass::saveSettings");
 } else {

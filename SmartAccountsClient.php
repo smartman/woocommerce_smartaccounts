@@ -13,6 +13,7 @@ class SmartAccountsClient
     protected $country;
     protected $isCompany;
     protected $api;
+    protected $vatNumber;
 
     protected $generalUserName = "WooCommerce User";
 
@@ -24,14 +25,16 @@ class SmartAccountsClient
      */
     public function __construct($order)
     {
+
+
         $this->country = $order->get_billing_country();
         if ($this->country == null || strlen($this->country) == 0) {
             $this->country = $order->get_shipping_country();
         }
-        $this->email       = $order->get_billing_email();
-        $this->isCompany   = strlen($order->get_billing_company()) > 0;
-        $firstName         = strlen($order->get_shipping_first_name()) == 0 ? $order->get_billing_first_name() : $order->get_shipping_first_name();
-        $lastName          = strlen($order->get_shipping_last_name()) == 0 ? $order->get_billing_last_name() : $order->get_shipping_last_name();
+        $this->email     = $order->get_billing_email();
+        $this->isCompany = strlen($order->get_billing_company()) > 0;
+        $firstName       = strlen($order->get_shipping_first_name()) == 0 ? $order->get_billing_first_name() : $order->get_shipping_first_name();
+        $lastName        = strlen($order->get_shipping_last_name()) == 0 ? $order->get_billing_last_name() : $order->get_shipping_last_name();
 
         $this->isAnonymous = ( ! $firstName && ! $lastName);
 
@@ -42,6 +45,8 @@ class SmartAccountsClient
         } else {
             $this->name = "$firstName $lastName";
         }
+
+        $this->vatNumber = get_post_meta($order->get_id(), 'vat_number', true);
 
         $this->api = new SmartAccountsApi();
     }
@@ -114,6 +119,10 @@ class SmartAccountsClient
                     "value" => $email
                 ]
             ];
+        }
+
+        if ($this->vatNumber) {
+            $body->vatNumber = $this->vatNumber;
         }
 
         $createResponse = $this->api->sendRequest($body, $apiUrl);
