@@ -28,7 +28,7 @@ class SmartAccountsSalesInvoice
         $body->invoiceNote = "WooCommerce order #" . $this->order->get_id();
 
         $settings = json_decode(get_option("sa_settings"));
-        if ($settings->objectId) {
+        if ($settings && $settings->objectId) {
             $body->objectId = $settings->objectId;
         }
 
@@ -82,6 +82,10 @@ class SmartAccountsSalesInvoice
                 if ($code == null || strlen($code) == 0) {
                     $code = "wc_product_" . $product->get_id();
                 }
+                $codeSplit = explode(",", $code);
+                if (count($codeSplit) > 1) {
+                    $code = $vatPc == 0 ? $codeSplit[0] : $codeSplit[1];
+                }
                 $row->description = strlen($product->get_name()) == 0 ? $product->get_description() : $product->get_name();
             }
 
@@ -98,7 +102,12 @@ class SmartAccountsSalesInvoice
             $row->vatPc      = $vatPc;
             $row->totalCents = intval(round(floatval($row->price) * $row->quantity * 100));
             $row->taxCents   = intval(round($row->totalCents * $vatPc / 100));
-            $rows[]          = $row;
+
+            $settings = json_decode(get_option("sa_settings"));
+            if ($settings && $settings->objectId) {
+                $row->objectId = $settings->objectId;
+            }
+            $rows[] = $row;
         }
 
         if ($this->order->get_shipping_total() > 0) {
