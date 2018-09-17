@@ -27,6 +27,11 @@ class SmartAccountsSalesInvoice
         $body->amount      = number_format($this->getOrderTotal(), 2);
         $body->invoiceNote = "WooCommerce order #" . $this->order->get_id();
 
+        $settings = json_decode(get_option("sa_settings"));
+        if ($settings && $settings->objectId) {
+            $body->objectId = $settings->objectId;
+        }
+
         $saArticle = new SmartAccountsArticle();
         $saArticle->ensureAllArticlesExist($body->rows);
 

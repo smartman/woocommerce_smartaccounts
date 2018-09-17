@@ -31,7 +31,37 @@ class SmartAccountsClass
             update_post_meta($order_id, 'smartaccounts_invoice_id', $invoice['invoice']['invoiceNumber']);
             error_log("SmartAccounts sales invoice created for order $order_id - " . $invoice['invoice']['invoiceNumber']);
         } catch (Exception $exception) {
+            $invoiceIdsString = get_option('sa_failed_orders');
+            $invoiceIds       = json_decode($invoiceIdsString);
+            if (is_array($invoiceIds)) {
+                error_log("Adding $order_id to failed orders array $invoiceIdsString to be retried later");
+                $invoiceIds[] = $order_id;
+                update_option('sa_failed_orders', json_encode($invoiceIds));
+            } else {
+                error_log("Adding $order_id to new failed orders array. previously $invoiceIdsString");
+                $invoiceIds = [$order_id];
+                update_option('sa_failed_orders', json_encode($invoiceIds));
+            }
+            wp_schedule_single_event(time() + 1800, 'sa_retry_failed_job');
+
             error_log("SmartAccounts error: " . $exception->getMessage() . " " . $exception->getTraceAsString());
+        }
+    }
+
+    public function retryFailedOrders()
+    {
+        $invoiceIdsString = get_option('sa_failed_orders');
+        error_log("Retrying orders $invoiceIdsString");
+
+        $invoiceIds = json_decode($invoiceIdsString);
+        if (is_array($invoiceIds)) {
+            update_option('sa_failed_orders', json_encode([]));
+            foreach ($invoiceIds as $id) {
+                error_log("Retrying sending order $id");
+                SmartAccountsClass::orderStatusProcessing($id);
+            }
+        } else {
+            error_log("Unable to parse failed orders: $invoiceIdsString");
         }
     }
 
@@ -43,13 +73,47 @@ class SmartAccountsClass
         $settings->apiSecret       = sanitize_text_field($unSanitized->apiSecret);
         $settings->defaultShipping = sanitize_text_field($unSanitized->defaultShipping);
         $settings->defaultPayment  = sanitize_text_field($unSanitized->defaultPayment);
-        $settings->showAdvanced    = $unSanitized->showAdvanced == true;
+        $objectId                  = sanitize_text_field($unSanitized->objectId);
+        if (preg_match("/^[a-z0-9]{8}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{12}$/", $objectId)) {
+            $settings->objectId = $objectId;
+        } else {
+            $settings->objectId = null;
+        }
 
-        $settings->paymentMethods = new stdClass();
+        $settings->showAdvanced = $unSanitized->showAdvanced == true;
 
-        foreach ($unSanitized->paymentMethods as $key => $method) {
-            $settings->paymentMethods->$key     = sanitize_text_field($method);
+        $settings->paymentMethodsPaid = new stdClass();
+        foreach ($unSanitized->paymentMethodsPaid as $key => $method) {
             $settings->paymentMethodsPaid->$key = $unSanitized->paymentMethodsPaid->$key == true;
+        }
+
+        $settings->currencyBanks = [];
+        foreach ($unSanitized->currencyBanks as $currencyBank) {
+            $newCurrencyBank                 = new stdClass();
+            $newCurrencyBank->payment_method = sanitize_text_field($currencyBank->payment_method);
+            $newCurrencyBank->currency_code  = sanitize_text_field($currencyBank->currency_code);
+            $newCurrencyBank->currency_bank  = sanitize_text_field($currencyBank->currency_bank);
+            if ( ! $newCurrencyBank->currency_code || ! $newCurrencyBank->currency_bank) {
+                continue;
+            }
+            array_push($settings->currencyBanks, $newCurrencyBank);
+        }
+
+        $allowedStatuses = [
+            'pending',
+            'processing',
+            'completed',
+            'on-hold'
+        ];
+
+        $settings->statuses = [];
+        foreach ($unSanitized->statuses as $status) {
+            if (in_array($status, $allowedStatuses)) {
+                $settings->statuses[] = $status;
+            }
+        }
+        if (count($settings->statuses) == 0) {
+            $settings->statuses = ['completed', 'processing'];
         }
 
         update_option('sa_settings', json_encode($settings));
@@ -74,6 +138,12 @@ class SmartAccountsClass
         if ( ! is_object($currentSettings->paymentMethodsPaid)) {
             $currentSettings->paymentMethodsPaid = new stdClass();
         }
+        if ( ! is_array($currentSettings->countryObjects)) {
+            $currentSettings->countryObjects = [];
+        }
+        if ( ! is_array($currentSettings->currencyBanks)) {
+            $currentSettings->currencyBanks = [];
+        }
 
         return $currentSettings;
     }
@@ -92,36 +162,73 @@ class SmartAccountsClass
         </style>
         <div id="sa-admin" class="wrap">
             <h1><?= esc_html(get_admin_page_title()); ?></h1>
+            <hr>
+
+            <button @click="saveSettings" class="button-primary woocommerce-save-button" :disabled="!formValid">Save
+                settings
+            </button>
+            <div v-if="!formValid" class="notice notice-error">
+                <small>All general settings are required and filled fields correct</small>
+            </div>
 
             <h2>General settings</h2>
             <table class="form-table">
-                <tr valign="top">
+                <tr valign="middle">
                     <th>SmartAccounts public key</th>
                     <td>
-                        <input size="50" v-model="settings.apiKey"/>
+                        <input size="50"
+                               data-vv-name="apiKey"
+                               v-validate="'required'"
+                               v-bind:class="{'notice notice-error':errors.first('apiKey')}"
+                               v-model="settings.apiKey"/>
                     </td>
                 </tr>
 
-                <tr valign="top">
+                <tr valign="middle">
                     <th>SmartAccounts private key</th>
                     <td>
-                        <input size="50" v-model="settings.apiSecret"/>
+                        <input size="50"
+                               data-vv-name="apiSecret"
+                               v-validate="'required'"
+                               v-bind:class="{'notice notice-error':errors.first('apiSecret')}"
+                               v-model="settings.apiSecret"/>
                     </td>
                 </tr>
 
-                <tr valign="top">
+                <tr valign="middle">
                     <th>SmartAccounts shipping article name</th>
                     <td>
-                        <input size="50" v-model="settings.defaultShipping"/>
+                        <input size="50"
+                               data-vv-name="defaultShipping"
+                               v-validate="'required'"
+                               v-bind:class="{'notice notice-error':errors.first('defaultShipping')}"
+                               v-model="settings.defaultShipping"/>
                     </td>
                 </tr>
-                <tr valign="top">
+                <tr valign="middle">
                     <th>SmartAccounts payments default bank account name</th>
                     <td>
-                        <input size="50" v-model="settings.defaultPayment"/>
+                        <input size="50"
+                               data-vv-name="defaultPayment"
+                               v-validate="'required'"
+                               v-bind:class="{'notice notice-error':errors.first('defaultPayment')}"
+                               v-model="settings.defaultPayment"/>
                     </td>
                 </tr>
-                <tr valign="top">
+
+                <tr valign="middle">
+                    <th>Invoice object (optional)</th>
+                    <td>
+                        <input size="50"
+                               data-vv-name="objectId"
+                               v-validate="{regex: /^[a-z0-9]{8}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{12}$/}"
+                               v-bind:class="{'notice notice-error':errors.first('objectId')}"
+                               v-model="settings.objectId"
+                               placeholder="00000000-0000-0000-0000-000000000000"/>
+                    </td>
+                </tr>
+
+                <tr valign="middle">
                     <th>Show advanced settings</th>
                     <td>
                         <input type="checkbox" v-model="settings.showAdvanced"/>
@@ -129,28 +236,88 @@ class SmartAccountsClass
                 </tr>
             </table>
 
+            <hr>
             <div v-show="settings.showAdvanced">
+                <h2>Order statuses to send to SmartAccounts</h2>
+                <small>If none selected then default Processing and Completed are used. Use CTRL+click to choose
+                    multiple values
+                </small>
+                <br><br>
+                <select v-model="settings.statuses" multiple>
+                    <option value="pending">Pending</option>
+                    <option value="processing">Processing</option>
+                    <option value="on-hold">On hold</option>
+                    <option value="completed">Completed</option>
+                </select>
+
+                <hr>
                 <h2>Payment methods</h2>
-                <small>Which payment methods in WooCommerce match which in SmartAccounts. If mapping missing then
-                    default is used. Last checkbox tells if payment should be created for orders with this payment
-                    method.
+                <small>Configure which payment methods are paid immediately and invoices can be created with payments
                 </small>
                 <table class="form-table">
                     <tr valign="top" v-for="method in paymentMethods">
                         <th>Method: {{method}}</th>
                         <td>
-                            <input size="50" v-model="settings.paymentMethods[method]"/>
-                            <label>Mark paid? </label><input type="checkbox"
-                                                             v-model="settings.paymentMethodsPaid[method]">
+                            <label>Mark paid? </label>
+                            <input type="checkbox" v-model="settings.paymentMethodsPaid[method]">
                         </td>
                     </tr>
-
                 </table>
+
+                <br>
+                <br>
+                <hr>
+                <h2>Bank accounts</h2>
+                <small>If currency and bank account mapping is set then given bank account name will be used for bank
+                    payment
+                    entry
+                </small>
+                <table class="form-table">
+                    <thead>
+                    <tr>
+                        <th>Payment method</th>
+                        <th>Currency code</th>
+                        <th>SmartAccounts bank account name</th>
+                        <th></th>
+                    </tr>
+                    </thead>
+                    <tr valign="middle" v-for="(item, index) in settings.currencyBanks">
+                        <th>
+                            <select v-model="settings.currencyBanks[index].payment_method">
+                                <option v-for="method in paymentMethods">{{method}}</option>
+                            </select>
+                        </th>
+                        <td>
+                            <a @click="removeCurrency(index)">X</a>
+                            <input :data-vv-name="'currency_code_'+index"
+                                   v-validate="{regex: /^[A-Z]{3}$/}"
+                                   v-bind:class="{'notice notice-error':errors.first('currency_code_'+index)}"
+                                   v-model="settings.currencyBanks[index].currency_code"
+                                   placeholder="EUR"/>
+                        </td>
+                        <td>
+                            <input size="30"
+                                   :data-vv-name="'currency_bank_'+index"
+                                   v-validate="{min: 2}"
+                                   v-bind:class="{'notice notice-error':errors.first('currency_bank_'+index)}"
+                                   v-model="settings.currencyBanks[index].currency_bank"
+                                   placeholder="LHV EUR"/>
+                        </td>
+                        <td></td>
+                    </tr>
+                </table>
+                <button @click="newCurrency" class="button-primary woocommerce-save-button">New mapping
+                </button>
             </div>
+            <br>
+            <hr>
             <button @click="saveSettings" class="button-primary woocommerce-save-button" :disabled="!formValid">Save
                 settings
             </button>
-            <small v-if="!formValid">All general settings are required</small>
+            <div v-if="!formValid" class="notice notice-error">
+                <small>All general settings are required and filled fields correct</small>
+            </div>
+
 
         </div>
         <?php
@@ -162,9 +329,11 @@ class SmartAccountsClass
         wp_register_script('sa_vue_js', plugins_url('js/sa-vue.js', __FILE__));
         wp_register_script('sa_axios_js', plugins_url('js/sa-axios.min.js', __FILE__));
         wp_register_script('sa_app_js', plugins_url('js/sa-app.js', __FILE__));
+        wp_register_script('sa_vee_validate', plugins_url('js/sa-vee-validate.js', __FILE__));
 
         wp_enqueue_script('sa_vue_js');
         wp_enqueue_script('sa_axios_js');
+        wp_enqueue_script('sa_vee_validate', false, ['sa_vue_js'], null, true);
         wp_enqueue_script('sa_app_js', false, ['sa_vue_js', 'sa_axios_js'], null, true);
 
         wp_localize_script("sa_app_js",
@@ -185,7 +354,7 @@ class SmartAccountsClass
 
     public static function getAvailablePaymentMethods()
     {
-        $gateways         = WC()->payment_gateways->get_available_payment_gateways();
+        $gateways         = WC()->payment_gateways->payment_gateways();
         $enabled_gateways = [];
 
         if ($gateways) {

@@ -43,6 +43,9 @@ Invoice is always marked paid regardless if the payment is actually made or not 
 
 == Changelog ==
 
+= 2.0 =
+Many advanced configuration settings available
+
 =1.4=
 Can handle SKU with spaces
 Product name instead of long description in SmartAccounts row description
