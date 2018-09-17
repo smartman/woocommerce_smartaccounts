@@ -14,12 +14,12 @@ class SmartAccountsClass
         try {
             $order = wc_get_order($order_id);
 
-//            if (strlen(get_post_meta($order_id, 'smartaccounts_invoice_id', true)) > 0) {
-//                error_log("SmartAccounts order $order_id already sent, not sending again, SA id="
-//                          . get_post_meta($order_id, 'smartaccounts_invoice_id', true));
-//
-//                return; //Smartaccounts order is already created
-//            }
+            if (strlen(get_post_meta($order_id, 'smartaccounts_invoice_id', true)) > 0) {
+                error_log("SmartAccounts order $order_id already sent, not sending again, SA id="
+                          . get_post_meta($order_id, 'smartaccounts_invoice_id', true));
+
+                return; //Smartaccounts order is already created
+            }
 
             $saClient       = new SmartAccountsClient($order);
             $client         = $saClient->getClient();
@@ -31,7 +31,37 @@ class SmartAccountsClass
             update_post_meta($order_id, 'smartaccounts_invoice_id', $invoice['invoice']['invoiceNumber']);
             error_log("SmartAccounts sales invoice created for order $order_id - " . $invoice['invoice']['invoiceNumber']);
         } catch (Exception $exception) {
+            $invoiceIdsString = get_option('sa_failed_orders');
+            $invoiceIds       = json_decode($invoiceIdsString);
+            if (is_array($invoiceIds)) {
+                error_log("Adding $order_id to failed orders array $invoiceIdsString to be retried later");
+                $invoiceIds[] = $order_id;
+                update_option('sa_failed_orders', json_encode($invoiceIds));
+            } else {
+                error_log("Adding $order_id to new failed orders array. previously $invoiceIdsString");
+                $invoiceIds = [$order_id];
+                update_option('sa_failed_orders', json_encode($invoiceIds));
+            }
+            wp_schedule_single_event(time() + 1800, 'sa_retry_failed_job');
+
             error_log("SmartAccounts error: " . $exception->getMessage() . " " . $exception->getTraceAsString());
+        }
+    }
+
+    public function retryFailedOrders()
+    {
+        $invoiceIdsString = get_option('sa_failed_orders');
+        error_log("Retrying orders $invoiceIdsString");
+
+        $invoiceIds = json_decode($invoiceIdsString);
+        if (is_array($invoiceIds)) {
+            update_option('sa_failed_orders', json_encode([]));
+            foreach ($invoiceIds as $id) {
+                error_log("Retrying sending order $id");
+                SmartAccountsClass::orderStatusProcessing($id);
+            }
+        } else {
+            error_log("Unable to parse failed orders: $invoiceIdsString");
         }
     }
 

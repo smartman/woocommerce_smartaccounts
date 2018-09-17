@@ -43,6 +43,8 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
         }
     }
 
+    add_action('sa_retry_failed_job', 'SmartAccountsClass::retryFailedOrders');
+
     add_action("wp_ajax_sa_save_settings", "SmartAccountsClass::saveSettings");
 } else {
     add_action('admin_notices', 'smartaccounts_missing_wc_admin_notice');
