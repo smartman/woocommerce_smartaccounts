@@ -43,6 +43,9 @@ Invoice is always marked paid regardless if the payment is actually made or not 
 
 == Changelog ==
 
+= 2.1 =
+Import products from SmartAccounts available
+
 = 2.0 =
 Many advanced configuration settings available
 
