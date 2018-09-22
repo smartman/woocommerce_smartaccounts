@@ -19,6 +19,10 @@ if (document.getElementById("sa-admin")) {
                     this.settings.paymentMethodsPaid[paymentMethodPaid] = false;
                 }
             }
+
+            miniToastr.init({
+                appendTarget: document.body
+            });
         },
         data() {
             return {
@@ -42,7 +46,17 @@ if (document.getElementById("sa-admin")) {
             saveSettings() {
                 axios.post(sa_settings.ajaxUrl + "?action=sa_save_settings", this.settings).then(
                     res => {
-                        // this.settings = res.data.settings;
+                        console.log('Settings saved');
+                        console.log("Mini toaster", miniToastr, miniToastr.error);
+
+                        miniToastr.success('Settings saved');
+                    });
+            },
+            importProducts() {
+                axios.get(sa_settings.ajaxUrl + "?action=sa_sync_products").then(
+                    res => {
+                        console.log('Sync started');
+                        miniToastr.success('Sync started');
                     });
             }
         },
