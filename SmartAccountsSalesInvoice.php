@@ -98,20 +98,31 @@ class SmartAccountsSalesInvoice
             $row->vatPc      = $vatPc;
             $row->totalCents = intval(round(floatval($row->price) * $row->quantity * 100));
             $row->taxCents   = intval(round($row->totalCents * $vatPc / 100));
-            $rows[]          = $row;
+
+            $settings = json_decode(get_option("sa_settings"));
+            if ($settings && $settings->objectId) {
+                $row->objectId = $settings->objectId;
+            }
+
+            $rows[] = $row;
         }
 
         if ($this->order->get_shipping_total() > 0) {
             $settings         = json_decode(get_option("sa_settings"));
             $row              = new stdClass();
-            $row->code        = $settings->defaultShipping;
+            $row->code        = isset($settings->defaultShipping) ? $settings->defaultShipping : "shipping";
             $row->description = "Woocommerce Shipping";
             $row->price       = $this->order->get_shipping_total();
             $row->quantity    = 1;
             $row->vatPc       = $vatPc;
             $row->totalCents  = intval(round(floatval($row->price) * $row->quantity * 100));
             $row->taxCents    = intval(round($row->totalCents * $vatPc / 100));
-            $rows[]           = $row;
+
+            $settings = json_decode(get_option("sa_settings"));
+            if ($settings && $settings->objectId) {
+                $row->objectId = $settings->objectId;
+            }
+            $rows[] = $row;
         }
 
         return $rows;

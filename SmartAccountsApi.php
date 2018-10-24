@@ -26,11 +26,11 @@ class SmartAccountsApi
         $sig = hash_hmac('sha256', $urlParams . $bodyJson, $sk);
         $url = "https://sa.smartaccounts.eu/api/$apiUrl?$urlParams&signature=$sig";
 
-        $args = array(
+        $args = [
             'body'    => $bodyJson,
             'headers' => ['Content-Type' => 'application/json'],
             'timeout' => 60
-        );
+        ];
 
         $response        = wp_remote_post($url, $args);
         $response_code   = wp_remote_retrieve_response_code($response);

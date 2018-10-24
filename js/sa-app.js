@@ -27,7 +27,8 @@ if (document.getElementById("sa-admin")) {
         data() {
             return {
                 settings: sa_settings.settings,
-                paymentMethods: sa_settings.paymentMethods
+                paymentMethods: sa_settings.paymentMethods,
+                syncInProgress: false
             };
         },
         methods: {
@@ -53,11 +54,18 @@ if (document.getElementById("sa-admin")) {
                     });
             },
             importProducts() {
+                this.syncInProgress = true;
+                console.log('Sync started');
+                miniToastr.success('Sync started');
                 axios.get(sa_settings.ajaxUrl + "?action=sa_sync_products").then(
                     res => {
-                        console.log('Sync started');
-                        miniToastr.success('Sync started');
-                    });
+                        console.log('Sync running in background');
+                        miniToastr.success('Sync running in background');
+                        this.syncInProgress = false;
+                    }).catch(_ => {
+                    miniToastr.error('Sync starting failed');
+                    this.syncInProgress = false;
+                });
             }
         },
         computed: {
@@ -65,10 +73,19 @@ if (document.getElementById("sa-admin")) {
                 return false
             },
             formValid() {
-                return this.formFieldsValidated && this.settings.apiKey && this.settings.apiSecret && this.settings.defaultPayment && this.settings.defaultShipping;
+                return this.formFieldsValidated && this.hasApiKey && this.hasApiSecret && this.hasDefaultPayment;
             },
             formFieldsValidated() {
                 return this.errors.items.length <= 0;
+            },
+            hasApiKey() {
+                return typeof this.settings.apiKey == "string" && this.settings.apiKey.length > 0;
+            },
+            hasApiSecret() {
+                return typeof this.settings.apiSecret == "string" && this.settings.apiSecret.length > 0;
+            },
+            hasDefaultPayment() {
+                return typeof this.settings.defaultPayment == "string" && this.settings.defaultPayment.length > 0;
             }
         }
 

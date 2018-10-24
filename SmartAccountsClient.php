@@ -25,21 +25,19 @@ class SmartAccountsClient
      */
     public function __construct($order)
     {
-
-
         $this->country = $order->get_billing_country();
         if ($this->country == null || strlen($this->country) == 0) {
             $this->country = $order->get_shipping_country();
         }
         $this->email     = $order->get_billing_email();
         $this->isCompany = strlen($order->get_billing_company()) > 0;
-        $firstName       = strlen($order->get_shipping_first_name()) == 0 ? $order->get_billing_first_name() : $order->get_shipping_first_name();
-        $lastName        = strlen($order->get_shipping_last_name()) == 0 ? $order->get_billing_last_name() : $order->get_shipping_last_name();
+        $firstName       = trim(strlen($order->get_shipping_first_name()) == 0 ? $order->get_billing_first_name() : $order->get_shipping_first_name());
+        $lastName        = trim(strlen($order->get_shipping_last_name()) == 0 ? $order->get_billing_last_name() : $order->get_shipping_last_name());
 
         $this->isAnonymous = ( ! $firstName && ! $lastName);
 
         if ($this->isCompany) {
-            $this->name = $order->get_billing_company();
+            $this->name = trim($order->get_billing_company());
         } else if ($this->isAnonymous) {
             $this->name = trim("$this->generalUserName $this->country");
         } else {

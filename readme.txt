@@ -24,6 +24,7 @@ Configuration is needed to make this plugin work. After activating the plugin fi
 * Copy SmartAccounts API key and secret from SmartAccounts interface. If you don't have SmartAccounts API key (please check Settings - Connected Services) you can contact SmartAccounts support to enable API service for your account. Additional conditions and charges may apply to API service.
 * Add bank account name you want to be used when making the invoices paid
 * You can also change SmartAccounts code for shipping
+* For periodical price and stock updates configure cron to call GET domain/wp-admin/admin-ajax.php?action=sa_sync_products
 
 == Frequently Asked Questions ==
 
@@ -43,7 +44,7 @@ Invoice is always marked paid regardless if the payment is actually made or not 
 
 == Changelog ==
 
-= 2.1 =
+= 2.2 =
 Import products from SmartAccounts available
 
 = 2.0 =

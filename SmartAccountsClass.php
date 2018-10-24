@@ -10,10 +10,10 @@ class SmartAccountsClass
 {
     public static function orderStatusProcessing($order_id)
     {
+        error_log("Order $order_id changed status. Checking if sending to SmartAccounts");
         //try catch makes sure your store will operate even if there are errors
         try {
             $order = wc_get_order($order_id);
-
             if (strlen(get_post_meta($order_id, 'smartaccounts_invoice_id', true)) > 0) {
                 error_log("SmartAccounts order $order_id already sent, not sending again, SA id="
                           . get_post_meta($order_id, 'smartaccounts_invoice_id', true));
@@ -31,6 +31,8 @@ class SmartAccountsClass
             update_post_meta($order_id, 'smartaccounts_invoice_id', $invoice['invoice']['invoiceNumber']);
             error_log("SmartAccounts sales invoice created for order $order_id - " . $invoice['invoice']['invoiceNumber']);
         } catch (Exception $exception) {
+            error_log("SmartAccounts error: " . $exception->getMessage() . " " . $exception->getTraceAsString());
+
             $invoiceIdsString = get_option('sa_failed_orders');
             $invoiceIds       = json_decode($invoiceIdsString);
             if (is_array($invoiceIds)) {
@@ -42,9 +44,8 @@ class SmartAccountsClass
                 $invoiceIds = [$order_id];
                 update_option('sa_failed_orders', json_encode($invoiceIds));
             }
-            wp_schedule_single_event(time() + 1800, 'sa_retry_failed_job');
 
-            error_log("SmartAccounts error: " . $exception->getMessage() . " " . $exception->getTraceAsString());
+            wp_schedule_single_event(time() + 1800, 'sa_retry_failed_job');
         }
     }
 
@@ -53,13 +54,29 @@ class SmartAccountsClass
         $invoiceIdsString = get_option('sa_failed_orders');
         error_log("Retrying orders $invoiceIdsString");
 
+        $retryCount = json_decode(get_option('sa_failed_orders_retries'));
+        if ( ! is_array($retryCount)) {
+            $retryCount = [];
+        }
+
         $invoiceIds = json_decode($invoiceIdsString);
+
         if (is_array($invoiceIds)) {
             update_option('sa_failed_orders', json_encode([]));
             foreach ($invoiceIds as $id) {
+                if (array_key_exists($id, $retryCount)) {
+                    if ($retryCount[$id] > 3) {
+                        error_log("Order $id has sync been retried over 3 times, dropping");
+                    } else {
+                        $retryCount[$id]++;
+                    }
+                } else {
+                    $retryCount[$id] = 1;
+                }
                 error_log("Retrying sending order $id");
                 SmartAccountsClass::orderStatusProcessing($id);
             }
+            update_option('sa_failed_orders_retries', json_encode($retryCount));
         } else {
             error_log("Unable to parse failed orders: $invoiceIdsString");
         }
@@ -79,6 +96,11 @@ class SmartAccountsClass
         } else {
             $settings->objectId = null;
         }
+        if ( ! $settings->defaultShipping) {
+            $settings->defaultShipping = "shipping";
+        }
+
+        $settings->backorders = $unSanitized->backorders == true;
 
         $settings->showAdvanced = $unSanitized->showAdvanced == true;
 
@@ -132,6 +154,9 @@ class SmartAccountsClass
         if ( ! $currentSettings) {
             $currentSettings = new stdClass();
         }
+        if ( ! isset($currentSettings->backorders)) {
+            $currentSettings->backorders = false;
+        }
         if ( ! is_object($currentSettings->paymentMethods)) {
             $currentSettings->paymentMethods = new stdClass();
         }
@@ -143,6 +168,12 @@ class SmartAccountsClass
         }
         if ( ! is_array($currentSettings->currencyBanks)) {
             $currentSettings->currencyBanks = [];
+        }
+        if ( ! is_array($currentSettings->statuses)) {
+            $currentSettings->statuses = [
+                'processing',
+                'completed'
+            ];
         }
 
         return $currentSettings;
@@ -164,11 +195,24 @@ class SmartAccountsClass
             <h1><?= esc_html(get_admin_page_title()); ?></h1>
             <hr>
 
-            <button @click="saveSettings" class="button-primary woocommerce-save-button" :disabled="!formValid">Save
-                settings
+            <button @click="saveSettings" class="button-primary woocommerce-save-button" :disabled="!formValid">
+                Save settings
             </button>
-            <div v-if="!formValid" class="notice notice-error">
-                <small>All general settings are required and filled fields correct</small>
+            <div v-show="!formValid" class="notice notice-error">
+                <small>Please review all settings</small>
+            </div>
+            <div class="notice notice-error" v-show="!settings.apiKey">
+                <small>Missing SmartAccounts public key</small>
+            </div>
+            <div class="notice notice-error" v-show="!settings.apiSecret">
+                <small>SmartAccounts private key</small>
+            </div>
+            <div class="notice notice-error" v-show="!settings.defaultPayment">
+                <small>SmartAccounts payments default bank account name</small>
+            </div>
+
+            <div v-if="!formFieldsValidated">
+                <div class="notice notice-error" v-for="err in errors.items">{{err.msg}}</div>
             </div>
 
             <h2>General settings</h2>
@@ -200,7 +244,6 @@ class SmartAccountsClass
                     <td>
                         <input size="50"
                                data-vv-name="defaultShipping"
-                               v-validate="'required'"
                                v-bind:class="{'notice notice-error':errors.first('defaultShipping')}"
                                v-model="settings.defaultShipping"/>
                     </td>
@@ -231,7 +274,8 @@ class SmartAccountsClass
                 <tr valign="middle">
                     <th></th>
                     <td>
-                        <button @click="importProducts" class="button-primary woocommerce-save-button">Sync products
+                        <button @click="importProducts" class="button-primary woocommerce-save-button"
+                                :disabled="syncInProgress">Sync products
                             from SmartAccounts
                         </button>
                     </td>
@@ -245,8 +289,9 @@ class SmartAccountsClass
                 </tr>
             </table>
 
-            <hr>
+
             <div v-show="settings.showAdvanced">
+                <hr>
                 <h2>Order statuses to send to SmartAccounts</h2>
                 <small>If none selected then default Processing and Completed are used. Use CTRL+click to choose
                     multiple values
@@ -317,16 +362,25 @@ class SmartAccountsClass
                 </table>
                 <button @click="newCurrency" class="button-primary woocommerce-save-button">New mapping
                 </button>
-            </div>
-            <br>
-            <hr>
-            <button @click="saveSettings" class="button-primary woocommerce-save-button" :disabled="!formValid">Save
-                settings
-            </button>
-            <div v-if="!formValid" class="notice notice-error">
-                <small>All general settings are required and filled fields correct</small>
+                <br>
+                <hr>
+                <h2>Product import settings</h2>
+                <table class="form-table">
+                    <tr valign="top">
+                        <th>Allow backorders</th>
+                        <td>
+                            <label>Products on sale with negative stock </label>
+                            <input type="checkbox" v-model="settings.backorders">
+                        </td>
+                    </tr>
+                </table>
             </div>
 
+            <br>
+            <hr>
+            <button @click="saveSettings" class="button-primary woocommerce-save-button" :disabled="!formValid">
+                Save settings
+            </button>
 
         </div>
         <?php

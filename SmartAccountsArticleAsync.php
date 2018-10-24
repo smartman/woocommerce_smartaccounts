@@ -22,7 +22,7 @@ class SmartAccountsArticleAsync extends WP_Background_Process
             $result = $api->sendRequest(null, "purchasesales/articles:get", "pageNumber=$page");
             if (isset($result['articles']) && is_array($result['articles'])) {
                 foreach ($result['articles'] as $article) {
-                    if ($article['activeSales']) {
+                    if ($article['activeSales'] && ($article['type'] == 'PRODUCT' || $article['type'] == 'WH')) {
                         if (count($products) == 10) {
                             $productsBatches[] = $products;
                             $products          = [];
@@ -35,7 +35,6 @@ class SmartAccountsArticleAsync extends WP_Background_Process
                         ];
                         error_log('SA sync code ' . $article['code']);
                     }
-                    break; //TODO TESTING one product at once
                 }
             }
             $page++;
@@ -52,7 +51,7 @@ class SmartAccountsArticleAsync extends WP_Background_Process
 
         $background->save()->dispatch();
 
-        wp_send_json($products);
+        wp_send_json(['message' => "Sync initiated"]);
     }
 
     protected $action = 'smartaccounts_product_import';
@@ -69,9 +68,11 @@ class SmartAccountsArticleAsync extends WP_Background_Process
             "codes=" . implode(",", $productCodes));
         sleep(2); // needed to not exceed API request limits
         if (isset($result['quantities']) && is_array($result['quantities'])) {
+            error_log('Received product quantities ' . json_encode($result['quantities']));
             foreach ($result['quantities'] as $quantity) {
                 $products[$quantity['code']]['quantity'] = intval($quantity['quantity']);
             }
+            error_log("Quantity set: " . json_encode($products));
         }
         foreach ($products as $code => $product) {
             $productId = wc_get_product_id_by_sku($code);
@@ -108,6 +109,13 @@ class SmartAccountsArticleAsync extends WP_Background_Process
             $post_id = $existing->get_id();
         }
 
+        $settings = json_decode(get_option("sa_settings"));
+        if ($settings && $settings->backorders) {
+            $backorders = 'yes';
+        } else {
+            $backorders = 'no';
+        }
+
         update_post_meta($post_id, '_sku', $code);
         update_post_meta($post_id, '_visibility', 'visible');
         update_post_meta($post_id, '_downloadable', 'no');
@@ -115,9 +123,10 @@ class SmartAccountsArticleAsync extends WP_Background_Process
         update_post_meta($post_id, '_price', $data['price']);
         update_post_meta($post_id, '_featured', 'no');
         update_post_meta($post_id, '_manage_stock', 'yes');
-        update_post_meta($post_id, '_backorders', 'no');
+        update_post_meta($post_id, '_backorders', $backorders);
+        update_post_meta($post_id, '_stock_status', intval($data['quantity']) < 1 ? 'outofstock' : 'instock');
+        wc_update_product_stock($post_id, $data['quantity']);
 
-        update_post_meta($post_id, '_stock_status', intval($data['quantity']) == 0 ? 'outofstock' : 'instock');
-        wc_update_product_stock($post_id, $data->qty_available);
+        error_log("Update stock for $post_id - $code to " . $data['quantity']);
     }
 }
