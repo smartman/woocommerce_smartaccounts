@@ -37,7 +37,7 @@ class SmartAccountsApi
         $saResponse      = wp_remote_retrieve_body($response);
         $decodedResponse = json_decode($saResponse, true);
 
-        if ( ! in_array($response_code, array(200, 201)) || is_wp_error($saResponse)) {
+        if ( ! in_array($response_code, [200, 201]) || is_wp_error($saResponse)) {
             throw new Exception("SmartAccounts call failed url=$url: $response_code" . print_r($response, true));
         }
 

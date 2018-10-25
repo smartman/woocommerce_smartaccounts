@@ -7,6 +7,7 @@ if ( ! defined('ABSPATH')) {
 class SmartAccountsClient
 {
 
+    protected $order;
     protected $isAnonymous;
     protected $email;
     protected $name;
@@ -25,6 +26,7 @@ class SmartAccountsClient
      */
     public function __construct($order)
     {
+        $this->order   = $order;
         $this->country = $order->get_billing_country();
         if ($this->country == null || strlen($this->country) == 0) {
             $this->country = $order->get_shipping_country();
@@ -105,11 +107,30 @@ class SmartAccountsClient
     {
         $apiUrl = "purchasesales/clients:add";
 
+
+        //maybe has PHP 5 and ?? operator is missing
+        $city       = $this->order->get_billing_city() ? $this->order->get_billing_city() :
+            ($this->order->get_shipping_city() ? $this->order->get_shipping_city() : "");
+        $state      = $this->order->get_billing_state() ? $this->order->get_billing_state() :
+            ($this->order->get_shipping_state() ? $this->order->get_shipping_state() : "");
+        $postalCode = $this->order->get_billing_postcode() ? $this->order->get_billing_postcode() :
+            ($this->order->get_shipping_postcode() ? $this->order->get_shipping_postcode() : "");
+        $address1   = $this->order->get_billing_address_1() ? $this->order->get_billing_address_1() :
+            ($this->order->get_shipping_address_1() ? $this->order->get_shipping_address_1() : "");
+        $address2   = $this->order->get_billing_address_2() ? $this->order->get_billing_address_2() :
+            ($this->order->get_shipping_address_2() ? $this->order->get_shipping_address_2() : "");
+
         $body          = new stdClass();
         $body->name    = $name;
         $body->address = (object)[
-            "country" => $country
+            "country"    => $country,
+            "city"       => $city,
+            "county"     => $state,
+            "address1"   => $address1,
+            "address2"   => $address2,
+            "postalCode" => $postalCode
         ];
+
         if ($email != null) {
             $body->contacts = [
                 [

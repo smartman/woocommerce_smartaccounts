@@ -18,6 +18,8 @@ class SmartAccountsArticleAsync extends WP_Background_Process
         $page            = 1;
         $productsBatches = [];
         $products        = [];
+        $syncCount       = 0;
+        $noSyncCount     = 0;
         do {
             $result = $api->sendRequest(null, "purchasesales/articles:get", "pageNumber=$page");
             if (isset($result['articles']) && is_array($result['articles'])) {
@@ -33,12 +35,15 @@ class SmartAccountsArticleAsync extends WP_Background_Process
                             'description' => $article['description'],
                             'quantity'    => 0
                         ];
-                        error_log('SA sync code ' . $article['code']);
+                        $syncCount++;
+                    } else {
+                        error_log("Not active sales and not product nor WH item " . $article['code']);
+                        $noSyncCount++;
                     }
                 }
             }
             $page++;
-        } while ($result->hasMoreEntries);
+        } while ($result['hasMoreEntries']);
 
         if (count($products) > 0) {
             $productsBatches[] = $products;
@@ -49,9 +54,10 @@ class SmartAccountsArticleAsync extends WP_Background_Process
             $background->push_to_queue($batch);
         }
 
+
         $background->save()->dispatch();
 
-        wp_send_json(['message' => "Sync initiated"]);
+        wp_send_json(['message' => "SA Sync initiated. Synching $syncCount, not synching $noSyncCount. " . time()]);
     }
 
     protected $action = 'smartaccounts_product_import';
@@ -116,11 +122,18 @@ class SmartAccountsArticleAsync extends WP_Background_Process
             $backorders = 'no';
         }
 
+        $regularPrice = get_post_meta($post_id, '_regular_price', true);
+        $salePrice    = get_post_meta($post_id, '_price', true);
+        if ( ! $regularPrice) {
+            update_post_meta($post_id, '_regular_price', $data['price']);
+        } else if ($regularPrice && $salePrice && ($salePrice == $regularPrice)) {
+            update_post_meta($post_id, '_regular_price', $data['price']);
+        }
+
+        update_post_meta($post_id, '_price', $data['price']);
         update_post_meta($post_id, '_sku', $code);
         update_post_meta($post_id, '_visibility', 'visible');
         update_post_meta($post_id, '_downloadable', 'no');
-        update_post_meta($post_id, '_regular_price', $data['price']);
-        update_post_meta($post_id, '_price', $data['price']);
         update_post_meta($post_id, '_featured', 'no');
         update_post_meta($post_id, '_manage_stock', 'yes');
         update_post_meta($post_id, '_backorders', $backorders);
