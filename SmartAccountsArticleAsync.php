@@ -128,6 +128,8 @@ class SmartAccountsArticleAsync extends WP_Background_Process
             update_post_meta($post_id, '_regular_price', $data['price']);
         } else if ($regularPrice && $salePrice && ($salePrice == $regularPrice)) {
             update_post_meta($post_id, '_regular_price', $data['price']);
+        } else if ($regularPrice && $salePrice && (floatval($data['price']) > floatval($regularPrice))) {
+            update_post_meta($post_id, '_regular_price', $data['price']);
         }
 
         update_post_meta($post_id, '_price', $data['price']);
