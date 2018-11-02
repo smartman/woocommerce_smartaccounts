@@ -45,7 +45,7 @@ class SmartAccountsClass
                 update_option('sa_failed_orders', json_encode($invoiceIds));
             }
 
-            wp_schedule_single_event(time() + 1800, 'sa_retry_failed_job');
+            wp_schedule_single_event(time() + 129600, 'sa_retry_failed_job');
         }
     }
 

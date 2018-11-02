@@ -64,14 +64,29 @@ class SmartAccountsArticleAsync extends WP_Background_Process
 
     function task($products)
     {
+        $backOffTime = get_option("sa_backoff_time");
+        if ($backOffTime && (time() < $backOffTime)) {
+            error_log("Backing up for SmartAccounts to honor API limits $backOffTime -> " . time());
+            sleep(15);
+
+            return true;
+        }
         $api          = new SmartAccountsApi();
         $productCodes = [];
         foreach ($products as $product) {
             $productCodes[] = urlencode($product['code']);
         }
 
-        $result = $api->sendRequest(null, "purchasesales/articles:getwarehousequantities",
-            "codes=" . implode(",", $productCodes));
+        try {
+            $result = $api->sendRequest(null, "purchasesales/articles:getwarehousequantities",
+                "codes=" . implode(",", $productCodes));
+        } catch (Exception $exception) {
+            error_log("SmartAccounts sync error: " . $exception->getMessage() . " " . $exception->getTraceAsString());
+            update_option('sa_backoff_time', time() + 5400);
+
+            return true;
+        }
+
         sleep(2); // needed to not exceed API request limits
         if (isset($result['quantities']) && is_array($result['quantities'])) {
             error_log('Received product quantities ' . json_encode($result['quantities']));
