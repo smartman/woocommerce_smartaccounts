@@ -240,7 +240,7 @@ class SmartAccountsClass
                 </tr>
 
                 <tr valign="middle">
-                    <th>SmartAccounts shipping article name</th>
+                    <th>SmartAccounts shipping article code</th>
                     <td>
                         <input size="50"
                                data-vv-name="defaultShipping"

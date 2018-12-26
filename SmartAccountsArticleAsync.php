@@ -25,7 +25,7 @@ class SmartAccountsArticleAsync extends WP_Background_Process
             if (isset($result['articles']) && is_array($result['articles'])) {
                 foreach ($result['articles'] as $article) {
                     if ($article['activeSales'] && ($article['type'] == 'PRODUCT' || $article['type'] == 'WH')) {
-                        if (count($products) == 10) {
+                        if (count($products) == 20) {
                             $productsBatches[] = $products;
                             $products          = [];
                         }
@@ -54,7 +54,6 @@ class SmartAccountsArticleAsync extends WP_Background_Process
             $background->push_to_queue($batch);
         }
 
-
         $background->save()->dispatch();
 
         wp_send_json(['message' => "SA Sync initiated. Synching $syncCount, not synching $noSyncCount. " . time()]);
@@ -64,6 +63,17 @@ class SmartAccountsArticleAsync extends WP_Background_Process
 
     function task($products)
     {
+        if ( ! is_array($products)) {
+            error_log('Not an array, something is wrong, removing from sync list: ' . print_r($products, true));
+
+            return false;
+        }
+
+        $productCodes = [];
+        foreach ($products as $product) {
+            $productCodes[] = urlencode($product['code']);
+        }
+
         $backOffTime = get_option("sa_backoff_time");
         if ($backOffTime && (time() < $backOffTime)) {
             error_log("Backing up for SmartAccounts to honor API limits $backOffTime -> " . time());
@@ -71,11 +81,7 @@ class SmartAccountsArticleAsync extends WP_Background_Process
 
             return true;
         }
-        $api          = new SmartAccountsApi();
-        $productCodes = [];
-        foreach ($products as $product) {
-            $productCodes[] = urlencode($product['code']);
-        }
+        $api = new SmartAccountsApi();
 
         try {
             $result = $api->sendRequest(null, "purchasesales/articles:getwarehousequantities",
@@ -112,10 +118,15 @@ class SmartAccountsArticleAsync extends WP_Background_Process
 
     protected function insertProduct($code, $data, $existing = null)
     {
+        if (strlen($data['description']) == 0) {
+            $title = $code;
+        } else {
+            $title = $data['description'];
+        }
         if ($existing == null) {
             $post_id = wp_insert_post([
-                'post_title'   => $data['description'],
-                'post_content' => $data['description'],
+                'post_title'   => $title,
+                'post_content' => $title,
                 'post_status'  => 'publish',
                 'post_type'    => "product",
             ], true);

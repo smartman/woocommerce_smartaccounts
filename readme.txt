@@ -1,20 +1,21 @@
 === Plugin Name ===
 Tags: SmartAccounts, smartaccounts, WooCommerce
 Requires at least: 4.8
-Tested up to: 4.9.8
+Tested up to: 5.0.2
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
-This plugin creates sales invoices in the smartaccounts.ee Online Accounting Software after Woocommerce order creation
+Send sales invoices to smartaccounts.ee Online Accounting Software and sync products with warehouse quantities.
 
 == Description ==
 
-After woocommerce order goes to status “Processing” or “Completed” then this plugin:
+This plugin:
 * Creates Customer to SmartAccounts if no existing customer with same name and e-mail found
 * Creates Articles in Smartaccounts of Woocommerce product on the order if existing products are not found.
 Woocommerce product SKU is compared with SmartAccounts article code.
 * Creates sales in invoice and connects it with the right customer and adds all the Articles on the invoice.
-* Marks the sales invoice as paid.
+* Marks the sales invoice as paid if needed.
+* Imports Articles from SmartAccounts to Woocommerce
 
 == Installation ==
 
@@ -25,12 +26,16 @@ Configuration is needed to make this plugin work. After activating the plugin fi
 * Add bank account name you want to be used when making the invoices paid
 * You can also change SmartAccounts code for shipping
 * For periodical price and stock updates configure cron to call GET domain/wp-admin/admin-ajax.php?action=sa_sync_products
+* "Payment methods" section allows configuring which payment methods are marked paid in SmartAccounts immediately
+* "Bank accounts" section allows configuring which payment method and currency corresponds to which SmartAccounts bank account name. If mapping is missing then default is used
+
+== Importing products from SmartAccounts ==
+* Products must be active sales items and of type Warehouse Item or Product. Services are not imported.
+* Product final sale price is price taken from SmartAccounts. If discount prices is needed then Regular price needs to be changed and then Regular price is not changed.
 
 == Frequently Asked Questions ==
 
 = What are the plugin limitations? =
-* This plugin creates sales invoice to SmartAccounts platform only first time when order is changed into "Processing" or "Completed" status.
-Invoice is always marked paid regardless if the payment is actually made or not yet. For example if Cash on Delivery payment method is used.
 * Order changes and cancelling is not handled automatically
 * All items have one VAT percentage
 * SmartAccounts article code must be added to the Woocommerce product SKU if existing SmartAccounts article must be used
@@ -38,9 +43,6 @@ Invoice is always marked paid regardless if the payment is actually made or not 
 * Plugin does not handle errors which come from exceeding rate limits or unpaid SmartAccounts invoices.
 * If there are errors then invoices might be missing and rest of the Woocommerce functionality keeps on working
 * SmartAccounts API key, API secret and Payment account name must be configured before plugin will start working properly.
-
-== Screenshots ==
-
 
 == Changelog ==
 
@@ -55,5 +57,4 @@ Can handle SKU with spaces
 Product name instead of long description in SmartAccounts row description
 
 =1.3=
-
 Cart based discounts are handled better.
