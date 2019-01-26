@@ -30,6 +30,13 @@ class SmartAccountsClass
             $saPayment->createPayment();
             update_post_meta($order_id, 'smartaccounts_invoice_id', $invoice['invoice']['invoiceNumber']);
             error_log("SmartAccounts sales invoice created for order $order_id - " . $invoice['invoice']['invoiceNumber']);
+            $invoiceIdsString = get_option('sa_failed_orders');
+            $invoiceIds       = json_decode($invoiceIdsString);
+            if (is_array($invoiceIds) && array_key_exists($order_id, $invoiceIds)) {
+                unset($invoiceIds[$order_id]);
+                update_option('sa_failed_orders', json_encode($invoiceIds));
+                error_log("Removed $order_id from failed orders array");
+            }
         } catch (Exception $exception) {
             error_log("SmartAccounts error: " . $exception->getMessage() . " " . $exception->getTraceAsString());
 
@@ -37,11 +44,11 @@ class SmartAccountsClass
             $invoiceIds       = json_decode($invoiceIdsString);
             if (is_array($invoiceIds)) {
                 error_log("Adding $order_id to failed orders array $invoiceIdsString to be retried later");
-                $invoiceIds[] = $order_id;
+                $invoiceIds[$order_id] = $order_id;
                 update_option('sa_failed_orders', json_encode($invoiceIds));
             } else {
                 error_log("Adding $order_id to new failed orders array. previously $invoiceIdsString");
-                $invoiceIds = [$order_id];
+                $invoiceIds = [$order_id => $order_id];
                 update_option('sa_failed_orders', json_encode($invoiceIds));
             }
 

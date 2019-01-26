@@ -115,10 +115,10 @@ class SmartAccountsClient
             ($this->order->get_shipping_state() ? $this->order->get_shipping_state() : "");
         $postalCode = $this->order->get_billing_postcode() ? $this->order->get_billing_postcode() :
             ($this->order->get_shipping_postcode() ? $this->order->get_shipping_postcode() : "");
-        $address1   = $this->order->get_billing_address_1() ? $this->order->get_billing_address_1() :
-            ($this->order->get_shipping_address_1() ? $this->order->get_shipping_address_1() : "");
-        $address2   = $this->order->get_billing_address_2() ? $this->order->get_billing_address_2() :
-            ($this->order->get_shipping_address_2() ? $this->order->get_shipping_address_2() : "");
+        $address1   = substr($this->order->get_billing_address_1() ? $this->order->get_billing_address_1() :
+            ($this->order->get_shipping_address_1() ? $this->order->get_shipping_address_1() : ""), 0, 64);
+        $address2   = substr($this->order->get_billing_address_2() ? $this->order->get_billing_address_2() :
+            ($this->order->get_shipping_address_2() ? $this->order->get_shipping_address_2() : ""), 0, 64);
 
         $body          = new stdClass();
         $body->name    = $name;
