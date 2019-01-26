@@ -46,6 +46,9 @@ Configuration is needed to make this plugin work. After activating the plugin fi
 
 == Changelog ==
 
+= 2.2.1 =
+If address is longer than 64 characters then it is truncated when sending to SmartAccounts as longer addresses are not supported
+
 = 2.2 =
 Import products from SmartAccounts available
 
