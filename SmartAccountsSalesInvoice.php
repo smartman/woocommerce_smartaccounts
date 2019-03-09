@@ -94,7 +94,7 @@ class SmartAccountsSalesInvoice
 
             $rowPrice = $item->get_total() / $item->get_quantity();
 
-            $row->price      = number_format($rowPrice, 2);
+            $row->price      = number_format($rowPrice, 2, ".", "");
             $row->vatPc      = $vatPc;
             $row->totalCents = intval(round(floatval($row->price) * $row->quantity * 100));
             $row->taxCents   = intval(round($row->totalCents * $vatPc / 100));

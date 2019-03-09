@@ -1,7 +1,7 @@
 === Plugin Name ===
 Tags: SmartAccounts, smartaccounts, WooCommerce
 Requires at least: 4.8
-Tested up to: 5.0.2
+Tested up to: 5.1
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -45,6 +45,9 @@ Configuration is needed to make this plugin work. After activating the plugin fi
 * SmartAccounts API key, API secret and Payment account name must be configured before plugin will start working properly.
 
 == Changelog ==
+
+= 2.2.1 =
+Support over 1000 currency unit invoices
 
 = 2.2.1 =
 If address is longer than 64 characters then it is truncated when sending to SmartAccounts as longer addresses are not supported
