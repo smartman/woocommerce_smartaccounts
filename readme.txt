@@ -46,7 +46,10 @@ Configuration is needed to make this plugin work. After activating the plugin fi
 
 == Changelog ==
 
-= 2.2.1 =
+= 2.2.3 =
+Product backorders setting overwriting removed
+
+= 2.2.2 =
 Support over 1000 currency unit invoices
 
 = 2.2.1 =
