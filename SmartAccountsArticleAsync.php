@@ -141,13 +141,6 @@ class SmartAccountsArticleAsync extends WP_Background_Process
             $post_id = $existing->get_id();
         }
 
-        $settings = json_decode(get_option("sa_settings"));
-        if ($settings && $settings->backorders) {
-            $backorders = 'yes';
-        } else {
-            $backorders = 'no';
-        }
-
         $regularPrice = get_post_meta($post_id, '_regular_price', true);
         $salePrice    = get_post_meta($post_id, '_price', true);
         if ( ! $regularPrice) {
@@ -164,7 +157,6 @@ class SmartAccountsArticleAsync extends WP_Background_Process
         update_post_meta($post_id, '_downloadable', 'no');
         update_post_meta($post_id, '_featured', 'no');
         update_post_meta($post_id, '_manage_stock', 'yes');
-        update_post_meta($post_id, '_backorders', $backorders);
         update_post_meta($post_id, '_stock_status', intval($data['quantity']) < 1 ? 'outofstock' : 'instock');
         wc_update_product_stock($post_id, $data['quantity']);
 

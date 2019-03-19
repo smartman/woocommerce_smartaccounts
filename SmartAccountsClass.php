@@ -107,8 +107,6 @@ class SmartAccountsClass
             $settings->defaultShipping = "shipping";
         }
 
-        $settings->backorders = $unSanitized->backorders == true;
-
         $settings->showAdvanced = $unSanitized->showAdvanced == true;
 
         $settings->paymentMethodsPaid = new stdClass();
@@ -160,9 +158,6 @@ class SmartAccountsClass
 
         if ( ! $currentSettings) {
             $currentSettings = new stdClass();
-        }
-        if ( ! isset($currentSettings->backorders)) {
-            $currentSettings->backorders = false;
         }
         if ( ! is_object($currentSettings->paymentMethods)) {
             $currentSettings->paymentMethods = new stdClass();
@@ -369,18 +364,6 @@ class SmartAccountsClass
                 </table>
                 <button @click="newCurrency" class="button-primary woocommerce-save-button">New mapping
                 </button>
-                <br>
-                <hr>
-                <h2>Product import settings</h2>
-                <table class="form-table">
-                    <tr valign="top">
-                        <th>Allow backorders</th>
-                        <td>
-                            <label>Products on sale with negative stock </label>
-                            <input type="checkbox" v-model="settings.backorders">
-                        </td>
-                    </tr>
-                </table>
             </div>
 
             <br>
