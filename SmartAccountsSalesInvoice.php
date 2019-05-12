@@ -24,7 +24,7 @@ class SmartAccountsSalesInvoice
         $body->currency    = $this->order->get_currency();
         $body->rows        = $this->getOrderRows();
         $body->roundAmount = $this->getRoundingAmount($body->rows);
-        $body->amount      = number_format($this->getOrderTotal(), 2);
+        $body->amount      = $this->order->get_total();
         $body->invoiceNote = "WooCommerce order #" . $this->order->get_id();
 
         $settings = json_decode(get_option("sa_settings"));
