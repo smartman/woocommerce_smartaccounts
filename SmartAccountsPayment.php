@@ -12,10 +12,12 @@ class SmartAccountsPayment
 
     public function createPayment()
     {
-        $settings           = json_decode(get_option("sa_settings"));
-        $orderPaymentMethod = $this->order->get_payment_method_title();
+        $settings                = json_decode(get_option("sa_settings"));
+        $orderPaymentMethod      = $this->order->get_payment_method();
+        $orderPaymentMethodTitle = $this->order->get_payment_method_title();
 
-        if (isset($settings->paymentMethodsPaid) && ! $settings->paymentMethodsPaid->$orderPaymentMethod) {
+        //use method ID and title for fallback
+        if (isset($settings->paymentMethodsPaid) && ! ($settings->paymentMethodsPaid->$orderPaymentMethod || $settings->paymentMethodsPaid->$orderPaymentMethodTitle)) {
             error_log("Payment method $orderPaymentMethod is not allowed to be marked paid");
 
             return;

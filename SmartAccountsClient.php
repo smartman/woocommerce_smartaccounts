@@ -7,12 +7,15 @@ if ( ! defined('ABSPATH')) {
 class SmartAccountsClient
 {
 
+    /** @var WC_Order */
     protected $order;
     protected $isAnonymous;
     protected $email;
     protected $name;
     protected $country;
     protected $isCompany;
+
+    /** @var SmartAccountsApi */
     protected $api;
     protected $vatNumber;
 
@@ -22,7 +25,7 @@ class SmartAccountsClient
     /**
      * SmartAccountsClient constructor.
      *
-     * @param $order WooCommerce order object
+     * @param $order WC_Order
      */
     public function __construct($order)
     {
@@ -40,7 +43,7 @@ class SmartAccountsClient
 
         if ($this->isCompany) {
             $this->name = trim($order->get_billing_company());
-        } else if ($this->isAnonymous) {
+        } elseif ($this->isAnonymous) {
             $this->name = trim("$this->generalUserName $this->country");
         } else {
             $this->name = "$firstName $lastName";
@@ -56,13 +59,28 @@ class SmartAccountsClient
      * current WooCommerce order do not exist then will create new client.
      * Comparison is done with name, country and e-mail
      *
-     * @return SmartAccountsClass customer array
+     * @return SmartAccountsClient
      */
     public function getClient()
     {
-        $apiUrl  = "purchasesales/clients:get";
+        $apiUrl = "purchasesales/clients:get";
+
+        if ($this->order->meta_exists('_billing_regcode')) {
+            $client = $this->order->get_meta('_billing_regcode', true);
+        } else {
+            $pres       = ['oü', 'as', 'fie', 'mtü', 'kü'];
+            $name       = $this->name;
+            foreach ($pres as $pre) {
+                $name = preg_replace("/(.*)( " . $pre . "| " . mb_strtoupper($pre) . ")?$/imU", '$1', $name);
+                $name = preg_replace("/^(" . $pre . " |" . mb_strtoupper($pre) . " )?(.*)/im", '$2', $name);
+            }
+
+            $client = urlencode($name);
+        }
+
         $clients = $this->api->sendRequest(null, $apiUrl,
-            "fetchAddresses=true&fetchContacts=true&nameOrRegCode=" . urlencode($this->name));
+            "fetchAddresses=true&fetchContacts=true&nameOrRegCode=" . $client);
+
         if ($this->isAnonymous) {
             return $this->getAnonymousClient($clients["clients"], $this->country, $this->name);
         } else {
@@ -76,7 +94,7 @@ class SmartAccountsClient
     private function getAnonymousClient($clients, $country, $name)
     {
         foreach ($clients as $client) {
-            if ($this->isGeneralCountryClient($client, $country, $name)) {
+            if ($this->isGeneralCountryClient($client, $country)) {
                 return $client;
             }
         }
@@ -106,7 +124,6 @@ class SmartAccountsClient
     private function addNewSaClient($email, $name, $country)
     {
         $apiUrl = "purchasesales/clients:add";
-
 
         //maybe has PHP 5 and ?? operator is missing
         $city       = $this->order->get_billing_city() ? $this->order->get_billing_city() :
@@ -139,6 +156,19 @@ class SmartAccountsClient
                 ]
             ];
         }
+
+        $phone = $this->order->get_billing_phone();
+        if ($phone) {
+            if ( ! $body->contacts) {
+                $body->contacts = [];
+            }
+            $body->contacts[] =
+                [
+                    "type"  => "PHONE",
+                    "value" => $phone
+                ];
+        }
+
 
         if ($this->vatNumber) {
             $body->vatNumber = $this->vatNumber;

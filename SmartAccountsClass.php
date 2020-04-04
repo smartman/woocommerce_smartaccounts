@@ -8,6 +8,56 @@ include_once('SmartAccountsArticle.php');
 
 class SmartAccountsClass
 {
+    public static function orderOfferStatusProcessing($order_id)
+    {
+        error_log("Order $order_id changed status. Checking if sending OFFER to SmartAccounts");
+        //try catch makes sure your store will operate even if there are errors
+        try {
+            $order = wc_get_order($order_id);
+            if (strlen(get_post_meta($order_id, 'smartaccounts_invoice_id', true)) > 0
+                || strlen(get_post_meta($order_id, 'smartaccounts_offer_id', true)) > 0) {
+                error_log("SmartAccounts order $order_id already sent as offer or invoice, not sending OFFER again, SA id="
+                          . get_post_meta($order_id, 'smartaccounts_invoice_id', true) . " offer_id="
+                          . get_post_meta($order_id, 'smartaccounts_offer_id', true));
+
+                return; //Smartaccounts order is already created
+            }
+
+            $saClient       = new SmartAccountsClient($order);
+            $client         = $saClient->getClient();
+            $saSalesInvoice = new SmartAccountsSalesInvoice($order, $client);
+
+            $offer = $saSalesInvoice->saveOffer();
+
+            update_post_meta($order_id, 'smartaccounts_offer_id', $offer['offer']['offerId']);
+            error_log("Offer data: ".json_encode($offer));
+            error_log("SmartAccounts sales offer created for order $order_id=" . $offer['offer']['offerId']);
+            $offerIdsString = get_option('sa_failed_offers');
+            $offerIds       = json_decode($offerIdsString);
+            if (is_array($offerIds) && array_key_exists($order_id, $offerIds)) {
+                unset($offerIds[$order_id]);
+                update_option('sa_failed_offers', json_encode($offerIds));
+                error_log("Removed $order_id from failed offers array");
+            }
+        } catch (Exception $exception) {
+            error_log("SmartAccounts error: " . $exception->getMessage() . " " . $exception->getTraceAsString());
+
+            $offerIdsString = get_option('sa_failed_offers');
+            $offerIds       = json_decode($offerIdsString);
+            if (is_array($offerIds)) {
+                error_log("Adding $order_id to failed offers array $offerIdsString to be retried later");
+                $offerIds[$order_id] = $order_id;
+                update_option('sa_failed_offers', json_encode($offerIds));
+            } else {
+                error_log("Adding $order_id to new failed offers array. previously $offerIdsString");
+                $offerIds = [$order_id => $order_id];
+                update_option('sa_failed_offers', json_encode($offerIds));
+            }
+
+            wp_schedule_single_event(time() + 129600, 'sa_retry_failed_job');
+        }
+    }
+
     public static function orderStatusProcessing($order_id)
     {
         error_log("Order $order_id changed status. Checking if sending to SmartAccounts");
@@ -56,8 +106,38 @@ class SmartAccountsClass
         }
     }
 
-    public function retryFailedOrders()
+    public static function retryFailedOrders()
     {
+        $offerIdsString = get_option('sa_failed_offers');
+        error_log("Retrying offers $offerIdsString");
+
+        $retryCount = json_decode(get_option('sa_failed_offer_retries'));
+        if ( ! is_array($retryCount)) {
+            $retryCount = [];
+        }
+
+        $offerIds = json_decode($offerIdsString);
+
+        if (is_array($offerIds)) {
+            update_option('sa_failed_offers', json_encode([]));
+            foreach ($offerIds as $id) {
+                if (array_key_exists($id, $retryCount)) {
+                    if ($retryCount[$id] > 3) {
+                        error_log("Order $id offer sync has been retried over 3 times, dropping");
+                    } else {
+                        $retryCount[$id]++;
+                    }
+                } else {
+                    $retryCount[$id] = 1;
+                }
+                error_log("Retrying sending offer $id");
+                SmartAccountsClass::orderOfferStatusProcessing($id);
+            }
+            update_option('sa_failed_offers_retries', json_encode($retryCount));
+        } else {
+            error_log("Unable to parse failed offers: $offerIdsString");
+        }
+
         $invoiceIdsString = get_option('sa_failed_orders');
         error_log("Retrying orders $invoiceIdsString");
 
@@ -111,7 +191,9 @@ class SmartAccountsClass
 
         $settings->paymentMethodsPaid = new stdClass();
         foreach ($unSanitized->paymentMethodsPaid as $key => $method) {
-            $settings->paymentMethodsPaid->$key = $unSanitized->paymentMethodsPaid->$key == true;
+            if (in_array($key, self::getAvailablePaymentMethods())) {
+                $settings->paymentMethodsPaid->$key = $unSanitized->paymentMethodsPaid->$key == true;
+            }
         }
 
         $settings->currencyBanks = [];
@@ -139,7 +221,15 @@ class SmartAccountsClass
                 $settings->statuses[] = $status;
             }
         }
-        if (count($settings->statuses) == 0) {
+
+        $settings->offer_statuses = [];
+        foreach ($unSanitized->offer_statuses as $status) {
+            if (in_array($status, $allowedStatuses) && ! in_array($status, $settings->statuses)) {
+                $settings->offer_statuses[] = $status;
+            }
+        }
+
+        if (count($settings->statuses) == 0 && count($settings->offer_statuses) == 0) {
             $settings->statuses = ['completed', 'processing'];
         }
 
@@ -150,9 +240,7 @@ class SmartAccountsClass
 
     public static function getSettings()
     {
-        if (get_option('sa_api_pk')) {
-            self::convertOldSettings();
-        }
+        self::convertOldSettings();
 
         $currentSettings = json_decode(get_option('sa_settings') ? get_option('sa_settings') : "");
 
@@ -294,7 +382,18 @@ class SmartAccountsClass
 
             <div v-show="settings.showAdvanced">
                 <hr>
-                <h2>Order statuses to send to SmartAccounts</h2>
+
+                <h2>Order statuses to send to SmartAccounts as Offer (Pakkumine)</h2>
+                <small>These statuses are saved in SmartAccounts as Offer</small>
+                <br><br>
+                <select v-model="settings.offer_statuses" multiple>
+                    <option value="pending">Pending</option>
+                    <option value="processing">Processing</option>
+                    <option value="on-hold">On hold</option>
+                    <option value="completed">Completed</option>
+                </select>
+
+                <h2>Order statuses to send to SmartAccounts as Invoice (Müügiarve)</h2>
                 <small>If none selected then default Processing and Completed are used. Use CTRL+click to choose
                     multiple values
                 </small>
@@ -311,8 +410,8 @@ class SmartAccountsClass
                 <small>Configure which payment methods are paid immediately and invoices can be created with payments
                 </small>
                 <table class="form-table">
-                    <tr valign="top" v-for="method in paymentMethods">
-                        <th>Method: {{method}}</th>
+                    <tr valign="top" v-for="(method, title) in paymentMethods">
+                        <th>Method: {{title}}</th>
                         <td>
                             <label>Mark paid? </label>
                             <input type="checkbox" v-model="settings.paymentMethodsPaid[method]">
@@ -340,7 +439,7 @@ class SmartAccountsClass
                     <tr valign="middle" v-for="(item, index) in settings.currencyBanks">
                         <th>
                             <select v-model="settings.currencyBanks[index].payment_method">
-                                <option v-for="method in paymentMethods">{{method}}</option>
+                                <option v-for="(method, title) in paymentMethods" :value="method">{{title}}</option>
                             </select>
                         </th>
                         <td>
@@ -415,7 +514,7 @@ class SmartAccountsClass
         if ($gateways) {
             foreach ($gateways as $gateway) {
                 if ($gateway->enabled == 'yes') {
-                    $enabled_gateways[] = $gateway->title;
+                    $enabled_gateways[$gateway->title] = $gateway->id;
                 }
             }
         }
@@ -423,18 +522,50 @@ class SmartAccountsClass
         return $enabled_gateways;
     }
 
+    //not very expensive to run every time when getting SA settings, better safe than sorry
     public static function convertOldSettings()
     {
-        $settings                  = new stdClass();
-        $settings->apiKey          = get_option('sa_api_pk');
-        $settings->apiSecret       = get_option('sa_api_sk');
-        $settings->defaultShipping = get_option('sa_api_shipping_code');
-        $settings->defaultPayment  = get_option('sa_api_payment_account');
+        if (get_option('sa_api_pk')) {
+            $settings                  = new stdClass();
+            $settings->apiKey          = get_option('sa_api_pk');
+            $settings->apiSecret       = get_option('sa_api_sk');
+            $settings->defaultShipping = get_option('sa_api_shipping_code');
+            $settings->defaultPayment  = get_option('sa_api_payment_account');
+            update_option('sa_settings', json_encode($settings));
+            delete_option('sa_api_pk');
+            delete_option('sa_api_sk');
+            delete_option('sa_api_shipping_code');
+            delete_option('sa_api_payment_account');
+        }
+
+        $settings = json_decode(get_option('sa_settings')) ? json_decode(get_option('sa_settings')) : new stdClass();
+
+        $gateways = WC()->payment_gateways->payment_gateways() ? WC()->payment_gateways->payment_gateways() : [];
+
+        foreach ($gateways as $gateway) {
+            $title = $gateway->title;
+            $id    = $gateway->id;
+            //move paid methods over to ID-s from title
+            if (property_exists($settings, 'paymentMethodsPaid')) {
+                if (property_exists($settings->paymentMethodsPaid, $title)) {
+                    $settings->paymentMethodsPaid->$id = $settings->paymentMethodsPaid->$title;
+                    unset($settings->paymentMethodsPaid->$title);
+                }
+            }
+
+            //move currency bank accounts over to ID-s from title
+            if (property_exists($settings, 'currencyBanks')) {
+                $newCurrencyBanks = [];
+                foreach ($settings->currencyBanks as $key => $value) {
+                    if ($value->payment_method === $title) {
+                        $value->payment_method = $id;
+                    }
+                    $newCurrencyBanks[] = $value;
+                }
+                $settings->currencyBanks = $newCurrencyBanks;
+            }
+        }
         update_option('sa_settings', json_encode($settings));
-        delete_option('sa_api_pk');
-        delete_option('sa_api_sk');
-        delete_option('sa_api_shipping_code');
-        delete_option('sa_api_payment_account');
     }
 
     public static function loadAsyncClass()

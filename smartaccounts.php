@@ -3,7 +3,7 @@
  * Plugin Name: SmartAccounts
  * Plugin URI: https://github.com/smartman/woocommerce_smartaccounts
  * Description: This plugin creates sales invoices in the smartaccounts.ee Online Accounting Software after Woocommerce order creation
- * Version: 2.2.4
+ * Version: 2.2.5
  * Author: Margus Pala
  * Author URI: https://marguspala.com
  * License: GPLv2 or later
@@ -33,14 +33,24 @@ if (in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_
     add_action('admin_enqueue_scripts', 'SmartAccountsClass::enqueueScripts');
     add_action('admin_menu', 'SmartAccountsClass::optionsPage');
 
-    $settings = json_decode(get_option('sa_settings'));
-    if ( ! $settings || ! $settings->statuses || ! is_array($settings->statuses) || count($settings->statuses) == 0) {
-        add_action('woocommerce_order_status_processing', 'SmartAccountsClass::orderStatusProcessing');
-        add_action('woocommerce_order_status_completed', 'SmartAccountsClass::orderStatusProcessing');
-    } else {
+    //if no configured invoice nor offer sending statuses configured then use default
+    $settings      = json_decode(get_option('sa_settings'));
+    $countStatuses = 0;
+    if (isset($settings->statuses) && is_array($settings->statuses)) {
         foreach ($settings->statuses as $status) {
+            $countStatuses++;
             add_action("woocommerce_order_status_$status", 'SmartAccountsClass::orderStatusProcessing');
         }
+    }
+    if (isset($settings->offer_statuses) && is_array($settings->offer_statuses)) {
+        foreach ($settings->offer_statuses as $status) {
+            $countStatuses++;
+            add_action("woocommerce_order_status_$status", 'SmartAccountsClass::orderOfferStatusProcessing');
+        }
+    }
+    if ($countStatuses === 0) {
+        add_action('woocommerce_order_status_processing', 'SmartAccountsClass::orderStatusProcessing');
+        add_action('woocommerce_order_status_completed', 'SmartAccountsClass::orderStatusProcessing');
     }
 
     add_action('sa_retry_failed_job', 'SmartAccountsClass::retryFailedOrders');

@@ -6,11 +6,11 @@ if (document.getElementById("sa-admin")) {
             this.newCountryObject();
             this.newCurrency();
 
-            //make sure all payment methods aéxist for checkbox check
-            for (const paymentMethodPaid of this.paymentMethods) {
+            //make sure all payment methods exist for checkbox check
+            for (const paymentMethodPaid of Object.values(this.paymentMethods)) {
                 let found = false;
                 for (const i in this.settings.paymentMethodsPaid) {
-                    if (i == paymentMethodPaid) {
+                    if (i === paymentMethodPaid) {
                         found = true;
                         break;
                     }
@@ -47,8 +47,9 @@ if (document.getElementById("sa-admin")) {
             saveSettings() {
                 axios.post(sa_settings.ajaxUrl + "?action=sa_save_settings", this.settings).then(
                     res => {
-                        console.log('Settings saved');
-                        console.log("Mini toaster", miniToastr, miniToastr.error);
+                        console.log('Settings saved', res.data.settings);
+
+                        this.settings = res.data.settings;
 
                         miniToastr.success('Settings saved');
                     });
@@ -69,9 +70,6 @@ if (document.getElementById("sa-admin")) {
             }
         },
         computed: {
-            requiredTags() {
-                return false
-            },
             formValid() {
                 return this.formFieldsValidated && this.hasApiKey && this.hasApiSecret && this.hasDefaultPayment;
             },

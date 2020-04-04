@@ -1,7 +1,7 @@
 === Plugin Name ===
 Tags: SmartAccounts, smartaccounts, WooCommerce
 Requires at least: 4.8
-Tested up to: 5.2
+Tested up to: 5.4
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -33,9 +33,17 @@ Configuration is needed to make this plugin work. After activating the plugin fi
 * Products must be active sales items and of type Warehouse Item or Product. Services are not imported.
 * Product final sale price is price taken from SmartAccounts. If discount prices is needed then Regular price needs to be changed and then Regular price is not changed.
 
-== Frequently Asked Questions ==
+== Note about Woo and SmartAccounts client matching ==
 
-= What are the plugin limitations? =
+If order has meta _billing_regcode then plugin looks for Client with this registration code from SmartAccounts.
+
+Otherwise customer name is used to match. If SmartAccounts with this name does not exist then new SmartAccounts Client is created.
+If user was anonymous then general client is created with the country name.
+
+As people often type their official company name incorrectly then fuzzy matching is performed.
+OÜ, AS, MTÜ, KÜ and FIE are removed from the beginning and end of the name and first match with the "main part of name" is used.
+
+== What are the plugin limitations? ==
 * Order changes and cancelling is not handled automatically
 * All items have one VAT percentage
 * SmartAccounts article code must be added to the Woocommerce product SKU if existing SmartAccounts article must be used
@@ -43,8 +51,22 @@ Configuration is needed to make this plugin work. After activating the plugin fi
 * Plugin does not handle errors which come from exceeding rate limits or unpaid SmartAccounts invoices.
 * If there are errors then invoices might be missing and rest of the Woocommerce functionality keeps on working
 * SmartAccounts API key, API secret and Payment account name must be configured before plugin will start working properly.
+* If plugin creates offer and this offer is deleted by the time invoice is created then creating invoice will fail.
+* Exact shipping method is not sent to SmartAccounts
+
+These shortcomings can be resolved by additional development. If these are problem for you then please get in touch with margus.pala@gmail.com
 
 == Changelog ==
+
+= 3.0.0 =
+Allows sending Woo orders to SmartAccounts as Offer.
+Connects offers with invoices when creating Invoice later.
+Includes phone when sending new Client to SmartAccounts
+Improved detection of Client by name if OÜ, FIE etc is not written correctly to the billing info
+Possible to connect Woo and SmartAccounts clients with company registration code in order meta using _billing_regcode
+
+= 2.2.5 =
+Better handling of payment methods
 
 = 2.2.4 =
 Better discount and cents fraction rounding
