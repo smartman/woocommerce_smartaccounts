@@ -3,13 +3,13 @@
  * Plugin Name: SmartAccounts
  * Plugin URI: https://github.com/smartman/woocommerce_smartaccounts
  * Description: This plugin creates sales invoices in the smartaccounts.ee Online Accounting Software after Woocommerce order creation
- * Version: 2.2.5
+ * Version: 3.0.1
  * Author: Margus Pala
  * Author URI: https://marguspala.com
  * License: GPLv2 or later
  * License URI:  https://www.gnu.org/licenses/gpl-2.0.html
  * Requires at least: 4.8.0
- * Tested up to: 5.2
+ * Tested up to: 5.4
  */
 
 if ( ! defined('ABSPATH')) {

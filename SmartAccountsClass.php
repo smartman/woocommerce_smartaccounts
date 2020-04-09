@@ -30,7 +30,7 @@ class SmartAccountsClass
             $offer = $saSalesInvoice->saveOffer();
 
             update_post_meta($order_id, 'smartaccounts_offer_id', $offer['offer']['offerId']);
-            error_log("Offer data: ".json_encode($offer));
+            error_log("Offer data: " . json_encode($offer));
             error_log("SmartAccounts sales offer created for order $order_id=" . $offer['offer']['offerId']);
             $offerIdsString = get_option('sa_failed_offers');
             $offerIds       = json_decode($offerIdsString);
@@ -384,7 +384,7 @@ class SmartAccountsClass
                 <hr>
 
                 <h2>Order statuses to send to SmartAccounts as Offer (Pakkumine)</h2>
-                <small>These statuses are saved in SmartAccounts as Offer</small>
+                <small>These statuses are saved in SmartAccounts as Offer. Make sure API account has permission!</small>
                 <br><br>
                 <select v-model="settings.offer_statuses" multiple>
                     <option value="pending">Pending</option>
