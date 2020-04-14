@@ -20,7 +20,7 @@ class SmartAccountsClass
                           . get_post_meta($order_id, 'smartaccounts_invoice_id', true) . " offer_id="
                           . get_post_meta($order_id, 'smartaccounts_offer_id', true));
 
-                return; //Smartaccounts order is already created
+                return; //Smartaccounts offer is already created
             }
 
             $saClient       = new SmartAccountsClient($order);
@@ -30,6 +30,7 @@ class SmartAccountsClass
             $offer = $saSalesInvoice->saveOffer();
 
             update_post_meta($order_id, 'smartaccounts_offer_id', $offer['offer']['offerId']);
+            update_post_meta($order_id, 'smartaccounts_offer_number', $offer['offer']['offerNumber']);
             error_log("Offer data: " . json_encode($offer));
             error_log("SmartAccounts sales offer created for order $order_id=" . $offer['offer']['offerId']);
             $offerIdsString = get_option('sa_failed_offers');
@@ -364,9 +365,8 @@ class SmartAccountsClass
                 <tr valign="middle">
                     <th></th>
                     <td>
-                        <button @click="importProducts" class="button-primary woocommerce-save-button"
-                                :disabled="syncInProgress">Sync products
-                            from SmartAccounts
+                        <button @click="importProducts" class="button-primary woocommerce-save-button" :disabled="syncInProgress">
+                            Sync products from SmartAccounts
                         </button>
                     </td>
                 </tr>

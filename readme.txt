@@ -58,6 +58,9 @@ These shortcomings can be resolved by additional development. If these are probl
 
 == Changelog ==
 
+= 3.0.2 =
+Saves SmartAccount offer human readable number to Woo order meta
+
 = 3.0.0 =
 Allows sending Woo orders to SmartAccounts as Offer.
 Connects offers with invoices when creating Invoice later.
