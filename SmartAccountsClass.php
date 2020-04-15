@@ -248,19 +248,19 @@ class SmartAccountsClass
         if ( ! $currentSettings) {
             $currentSettings = new stdClass();
         }
-        if ( ! is_object($currentSettings->paymentMethods)) {
+        if ( ! isset($currentSettings->paymentMethods) || ! is_object($currentSettings->paymentMethods)) {
             $currentSettings->paymentMethods = new stdClass();
         }
-        if ( ! is_object($currentSettings->paymentMethodsPaid)) {
+        if ( ! isset($currentSettings->paymentMethodsPaid) || ! is_object($currentSettings->paymentMethodsPaid)) {
             $currentSettings->paymentMethodsPaid = new stdClass();
         }
-        if ( ! is_array($currentSettings->countryObjects)) {
+        if ( ! isset($currentSettings->countryObjects) || ! is_array($currentSettings->countryObjects)) {
             $currentSettings->countryObjects = [];
         }
-        if ( ! is_array($currentSettings->currencyBanks)) {
+        if ( ! isset($currentSettings->currencyBanks) || ! is_array($currentSettings->currencyBanks)) {
             $currentSettings->currencyBanks = [];
         }
-        if ( ! is_array($currentSettings->statuses)) {
+        if ( ! isset($currentSettings->statuses) || ! is_array($currentSettings->statuses)) {
             $currentSettings->statuses = [
                 'processing',
                 'completed'
