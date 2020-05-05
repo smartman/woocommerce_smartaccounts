@@ -272,6 +272,9 @@ class SmartAccountsClass
                 'completed'
             ];
         }
+        if ( ! isset($currentSettings->offer_statuses) || ! is_array($currentSettings->offer_statuses)) {
+            $currentSettings->offer_statuses = [];
+        }
 
         return $currentSettings;
     }

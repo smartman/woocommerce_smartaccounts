@@ -58,7 +58,7 @@ These shortcomings can be resolved by additional development. If these are probl
 
 == Changelog ==
 
-= 3.0.5 =
+= 3.0.6 =
 Improved pricing when sale price is set.
 
 = 3.0.2 =
