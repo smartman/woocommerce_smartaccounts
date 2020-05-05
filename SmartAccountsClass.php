@@ -33,6 +33,8 @@ class SmartAccountsClass
             update_post_meta($order_id, 'smartaccounts_offer_number', $offer['offer']['offerNumber']);
             error_log("Offer data: " . json_encode($offer));
             error_log("SmartAccounts sales offer created for order $order_id=" . $offer['offer']['offerId']);
+            $order->add_order_note("Offer sent to SmartAccounts: " . $offer['offer']['offerNumber']);
+
             $offerIdsString = get_option('sa_failed_offers');
             $offerIds       = json_decode($offerIdsString);
             if (is_array($offerIds) && array_key_exists($order_id, $offerIds)) {
@@ -56,6 +58,7 @@ class SmartAccountsClass
             }
 
             wp_schedule_single_event(time() + 129600, 'sa_retry_failed_job');
+            $order->add_order_note("Offer sending to SmartAccounts failed: " . $exception->getMessage());
         }
     }
 
@@ -81,6 +84,8 @@ class SmartAccountsClass
             $saPayment->createPayment();
             update_post_meta($order_id, 'smartaccounts_invoice_id', $invoice['invoice']['invoiceNumber']);
             error_log("SmartAccounts sales invoice created for order $order_id - " . $invoice['invoice']['invoiceNumber']);
+            $order->add_order_note("Invoice sent to SmartAccounts: " . $invoice['invoice']['invoiceNumber']);
+
             $invoiceIdsString = get_option('sa_failed_orders');
             $invoiceIds       = json_decode($invoiceIdsString);
             if (is_array($invoiceIds) && array_key_exists($order_id, $invoiceIds)) {
@@ -104,6 +109,7 @@ class SmartAccountsClass
             }
 
             wp_schedule_single_event(time() + 129600, 'sa_retry_failed_job');
+            $order->add_order_note("Invoice sending to SmartAccounts failed: " . $exception->getMessage());
         }
     }
 

@@ -31,7 +31,7 @@ Configuration is needed to make this plugin work. After activating the plugin fi
 
 == Importing products from SmartAccounts ==
 * Products must be active sales items and of type Warehouse Item or Product. Services are not imported.
-* Product final sale price is price taken from SmartAccounts. If discount prices is needed then Regular price needs to be changed and then Regular price is not changed.
+* Product final price is taken from SmartAccounts unless sale price is set. If sale price is set manually then only regular price is changed.
 
 == Note about Woo and SmartAccounts client matching ==
 
@@ -57,6 +57,9 @@ OÜ, AS, MTÜ, KÜ and FIE are removed from the beginning and end of the name an
 These shortcomings can be resolved by additional development. If these are problem for you then please get in touch with margus.pala@gmail.com
 
 == Changelog ==
+
+= 3.0.5 =
+Improved pricing when sale price is set.
 
 = 3.0.2 =
 Saves SmartAccount offer human readable number to Woo order meta

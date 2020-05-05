@@ -142,16 +142,22 @@ class SmartAccountsArticleAsync extends WP_Background_Process
         }
 
         $regularPrice = get_post_meta($post_id, '_regular_price', true);
-        $salePrice    = get_post_meta($post_id, '_price', true);
-        if ( ! $regularPrice) {
+        $finalPrice   = get_post_meta($post_id, '_price', true);
+        $salePrice    = get_post_meta($post_id, '_sale_price', true);
+        if ( ! $regularPrice || ! $finalPrice) {
+            // No price set at all yet, set one now.
             update_post_meta($post_id, '_regular_price', $data['price']);
-        } else if ($regularPrice && $salePrice && ($salePrice == $regularPrice)) {
-            update_post_meta($post_id, '_regular_price', $data['price']);
-        } else if ($regularPrice && $salePrice && (floatval($data['price']) > floatval($regularPrice))) {
+            update_post_meta($post_id, '_price', $data['price']);
+        } elseif ($salePrice && ($salePrice !== $regularPrice)) {
+            // Sale price is set. Update only regular price and keep actual sale price what it is.
             update_post_meta($post_id, '_regular_price', $data['price']);
         }
 
-        update_post_meta($post_id, '_price', $data['price']);
+        if ($finalPrice && (floatval($data['price']) > floatval($regularPrice))) {
+            // New final price is more than regular price so regular price will be updated also.
+            update_post_meta($post_id, '_regular_price', $data['price']);
+        }
+
         update_post_meta($post_id, '_sku', $code);
         update_post_meta($post_id, '_visibility', 'visible');
         update_post_meta($post_id, '_downloadable', 'no');
