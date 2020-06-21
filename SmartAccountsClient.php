@@ -1,6 +1,6 @@
 <?php
 
-if ( ! defined('ABSPATH')) {
+if (!defined('ABSPATH')) {
     exit;
 } // Exit if accessed directly
 
@@ -39,7 +39,7 @@ class SmartAccountsClient
         $firstName       = trim(strlen($order->get_shipping_first_name()) == 0 ? $order->get_billing_first_name() : $order->get_shipping_first_name());
         $lastName        = trim(strlen($order->get_shipping_last_name()) == 0 ? $order->get_billing_last_name() : $order->get_shipping_last_name());
 
-        $this->isAnonymous = ( ! $firstName && ! $lastName);
+        $this->isAnonymous = (!$firstName && !$lastName);
 
         if ($this->isCompany) {
             $this->name = trim($order->get_billing_company());
@@ -49,7 +49,8 @@ class SmartAccountsClient
             $this->name = "$firstName $lastName";
         }
 
-        $this->vatNumber = get_post_meta($order->get_id(), 'vat_number', true);
+        $settings        = json_decode(get_option("sa_settings"));
+        $this->vatNumber = get_post_meta($order->get_id(), isset($settings->vat_number_meta) ? $settings->vat_number_meta : 'vat_number', true);
 
         $this->api = new SmartAccountsApi();
     }
@@ -68,8 +69,8 @@ class SmartAccountsClient
         if ($this->order->meta_exists('_billing_regcode')) {
             $client = $this->order->get_meta('_billing_regcode', true);
         } else {
-            $pres       = ['oü', 'as', 'fie', 'mtü', 'kü'];
-            $name       = $this->name;
+            $pres = ['oü', 'as', 'fie', 'mtü', 'kü'];
+            $name = $this->name;
             foreach ($pres as $pre) {
                 $name = preg_replace("/(.*)( " . $pre . "| " . mb_strtoupper($pre) . ")?$/imU", '$1', $name);
                 $name = preg_replace("/^(" . $pre . " |" . mb_strtoupper($pre) . " )?(.*)/im", '$2', $name);
@@ -104,7 +105,7 @@ class SmartAccountsClient
 
     private function isGeneralCountryClient($client, $country)
     {
-        if ( ! array_key_exists("address", $client)) {
+        if (!array_key_exists("address", $client)) {
             if ($client['name'] == $this->generalUserName) {
                 return true;
             } else {
@@ -159,7 +160,7 @@ class SmartAccountsClient
 
         $phone = $this->order->get_billing_phone();
         if ($phone) {
-            if ( ! $body->contacts) {
+            if (!$body->contacts) {
                 $body->contacts = [];
             }
             $body->contacts[] =
@@ -186,7 +187,7 @@ class SmartAccountsClient
      */
     private function getLoggedInClient($clients, $country, $name, $email)
     {
-        if ( ! is_array($clients) || count($clients) == 0) {
+        if (!is_array($clients) || count($clients) == 0) {
             return $this->addNewSaClient($email, $name, $country);
         }
 
@@ -203,7 +204,7 @@ class SmartAccountsClient
 
     private function hasEmail($client, $email)
     {
-        if ( ! array_key_exists("contacts", $client)) {
+        if (!array_key_exists("contacts", $client)) {
             return false;
         }
         foreach ($client["contacts"] as $contact) {

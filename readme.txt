@@ -58,6 +58,10 @@ These shortcomings can be resolved by additional development. If these are probl
 
 == Changelog ==
 
+
+= 3.1 =
+VAT number order meta field name is now configurable. If configured and vat number exists then it will be used when creating new client in SmartAccounts
+
 = 3.0.6 =
 Improved pricing when sale price is set.
 

@@ -17,8 +17,8 @@ class SmartAccountsClass
             if (strlen(get_post_meta($order_id, 'smartaccounts_invoice_id', true)) > 0
                 || strlen(get_post_meta($order_id, 'smartaccounts_offer_id', true)) > 0) {
                 error_log("SmartAccounts order $order_id already sent as offer or invoice, not sending OFFER again, SA id="
-                          . get_post_meta($order_id, 'smartaccounts_invoice_id', true) . " offer_id="
-                          . get_post_meta($order_id, 'smartaccounts_offer_id', true));
+                    . get_post_meta($order_id, 'smartaccounts_invoice_id', true) . " offer_id="
+                    . get_post_meta($order_id, 'smartaccounts_offer_id', true));
 
                 return; //Smartaccounts offer is already created
             }
@@ -70,7 +70,7 @@ class SmartAccountsClass
             $order = wc_get_order($order_id);
             if (strlen(get_post_meta($order_id, 'smartaccounts_invoice_id', true)) > 0) {
                 error_log("SmartAccounts order $order_id already sent, not sending again, SA id="
-                          . get_post_meta($order_id, 'smartaccounts_invoice_id', true));
+                    . get_post_meta($order_id, 'smartaccounts_invoice_id', true));
 
                 return; //Smartaccounts order is already created
             }
@@ -119,7 +119,7 @@ class SmartAccountsClass
         error_log("Retrying offers $offerIdsString");
 
         $retryCount = json_decode(get_option('sa_failed_offer_retries'));
-        if ( ! is_array($retryCount)) {
+        if (!is_array($retryCount)) {
             $retryCount = [];
         }
 
@@ -149,7 +149,7 @@ class SmartAccountsClass
         error_log("Retrying orders $invoiceIdsString");
 
         $retryCount = json_decode(get_option('sa_failed_orders_retries'));
-        if ( ! is_array($retryCount)) {
+        if (!is_array($retryCount)) {
             $retryCount = [];
         }
 
@@ -184,13 +184,14 @@ class SmartAccountsClass
         $settings->apiSecret       = sanitize_text_field($unSanitized->apiSecret);
         $settings->defaultShipping = sanitize_text_field($unSanitized->defaultShipping);
         $settings->defaultPayment  = sanitize_text_field($unSanitized->defaultPayment);
+        $settings->vat_number_meta = sanitize_text_field($unSanitized->vat_number_meta);
         $objectId                  = sanitize_text_field($unSanitized->objectId);
         if (preg_match("/^[a-z0-9]{8}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{12}$/", $objectId)) {
             $settings->objectId = $objectId;
         } else {
             $settings->objectId = null;
         }
-        if ( ! $settings->defaultShipping) {
+        if (!$settings->defaultShipping) {
             $settings->defaultShipping = "shipping";
         }
 
@@ -209,7 +210,7 @@ class SmartAccountsClass
             $newCurrencyBank->payment_method = sanitize_text_field($currencyBank->payment_method);
             $newCurrencyBank->currency_code  = sanitize_text_field($currencyBank->currency_code);
             $newCurrencyBank->currency_bank  = sanitize_text_field($currencyBank->currency_bank);
-            if ( ! $newCurrencyBank->currency_code || ! $newCurrencyBank->currency_bank) {
+            if (!$newCurrencyBank->currency_code || !$newCurrencyBank->currency_bank) {
                 continue;
             }
             array_push($settings->currencyBanks, $newCurrencyBank);
@@ -231,7 +232,7 @@ class SmartAccountsClass
 
         $settings->offer_statuses = [];
         foreach ($unSanitized->offer_statuses as $status) {
-            if (in_array($status, $allowedStatuses) && ! in_array($status, $settings->statuses)) {
+            if (in_array($status, $allowedStatuses) && !in_array($status, $settings->statuses)) {
                 $settings->offer_statuses[] = $status;
             }
         }
@@ -251,28 +252,31 @@ class SmartAccountsClass
 
         $currentSettings = json_decode(get_option('sa_settings') ? get_option('sa_settings') : "");
 
-        if ( ! $currentSettings) {
+        if (!$currentSettings) {
             $currentSettings = new stdClass();
         }
-        if ( ! isset($currentSettings->paymentMethods) || ! is_object($currentSettings->paymentMethods)) {
+        if (!isset($currentSettings->vat_number_meta)) {
+            $currentSettings->vat_number_meta = "vat_number";
+        }
+        if (!isset($currentSettings->paymentMethods) || !is_object($currentSettings->paymentMethods)) {
             $currentSettings->paymentMethods = new stdClass();
         }
-        if ( ! isset($currentSettings->paymentMethodsPaid) || ! is_object($currentSettings->paymentMethodsPaid)) {
+        if (!isset($currentSettings->paymentMethodsPaid) || !is_object($currentSettings->paymentMethodsPaid)) {
             $currentSettings->paymentMethodsPaid = new stdClass();
         }
-        if ( ! isset($currentSettings->countryObjects) || ! is_array($currentSettings->countryObjects)) {
+        if (!isset($currentSettings->countryObjects) || !is_array($currentSettings->countryObjects)) {
             $currentSettings->countryObjects = [];
         }
-        if ( ! isset($currentSettings->currencyBanks) || ! is_array($currentSettings->currencyBanks)) {
+        if (!isset($currentSettings->currencyBanks) || !is_array($currentSettings->currencyBanks)) {
             $currentSettings->currencyBanks = [];
         }
-        if ( ! isset($currentSettings->statuses) || ! is_array($currentSettings->statuses)) {
+        if (!isset($currentSettings->statuses) || !is_array($currentSettings->statuses)) {
             $currentSettings->statuses = [
                 'processing',
                 'completed'
             ];
         }
-        if ( ! isset($currentSettings->offer_statuses) || ! is_array($currentSettings->offer_statuses)) {
+        if (!isset($currentSettings->offer_statuses) || !is_array($currentSettings->offer_statuses)) {
             $currentSettings->offer_statuses = [];
         }
 
@@ -281,7 +285,7 @@ class SmartAccountsClass
 
     public static function options_page_html()
     {
-        if ( ! current_user_can('manage_options')) {
+        if (!current_user_can('manage_options')) {
             return;
         }
         ?>
@@ -374,7 +378,8 @@ class SmartAccountsClass
                 <tr valign="middle">
                     <th></th>
                     <td>
-                        <button @click="importProducts" class="button-primary woocommerce-save-button" :disabled="syncInProgress">
+                        <button @click="importProducts" class="button-primary woocommerce-save-button"
+                                :disabled="syncInProgress">
                             Sync products from SmartAccounts
                         </button>
                     </td>
@@ -413,6 +418,14 @@ class SmartAccountsClass
                     <option value="on-hold">On hold</option>
                     <option value="completed">Completed</option>
                 </select>
+
+                <h2>Vat number meta field</h2>
+                <small>Order meta field that contains company VAT number if one exists. Default vat_number. If meta
+                    field does not exists then client VAT number will not be sent to the SmartAccounts
+                    (Optional)</small>
+                <br>
+                <input size="20" v-model="settings.vat_number_meta"/>
+                <br><br>
 
                 <hr>
                 <h2>Payment methods</h2>
