@@ -128,6 +128,8 @@ class SmartAccountsSalesInvoice
             if (strlen($row->description) == 0) {
                 $row->description = $code;
             }
+            // Remove unsupported UTF-8 multibyte characters.
+            $row->description = preg_replace('/[\xF0-\xF7].../s', '_', $row->description);
 
             $row->code = $code;
             $row->quantity = $item->get_quantity();
