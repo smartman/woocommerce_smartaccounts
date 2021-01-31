@@ -1,7 +1,7 @@
 === Plugin Name ===
 Tags: SmartAccounts, smartaccounts, WooCommerce
 Requires at least: 4.8
-Tested up to: 5.4
+Tested up to: 5.6
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -58,6 +58,8 @@ These shortcomings can be resolved by additional development. If these are probl
 
 == Changelog ==
 
+= 3.2 =
+Product import filters and Warehouse setting for new invoices.
 
 = 3.1 =
 VAT number order meta field name is now configurable. If configured and vat number exists then it will be used when creating new client in SmartAccounts

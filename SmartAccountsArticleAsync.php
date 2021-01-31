@@ -20,26 +20,54 @@ class SmartAccountsArticleAsync extends WP_Background_Process
         $products        = [];
         $syncCount       = 0;
         $noSyncCount     = 0;
+
+        $settings = SmartAccountsClass::getSettings();
+        if (strlen($settings->inventoryFilter) === 0) {
+            $filter = [];
+        } else {
+            $filter = explode(',', $settings->inventoryFilter);
+        }
+
         do {
             $result = $api->sendRequest(null, "purchasesales/articles:get", "pageNumber=$page");
             if (isset($result['articles']) && is_array($result['articles'])) {
                 foreach ($result['articles'] as $article) {
-                    if ($article['activeSales'] && ($article['type'] == 'PRODUCT' || $article['type'] == 'WH')) {
-                        if (count($products) == 20) {
-                            $productsBatches[] = $products;
-                            $products          = [];
-                        }
-                        $products[$article['code']] = [
-                            'code'        => $article['code'],
-                            'price'       => $article['priceSales'],
-                            'description' => $article['description'],
-                            'quantity'    => 0
-                        ];
-                        $syncCount++;
-                    } else {
-                        error_log("Not active sales and not product nor WH item " . $article['code']);
-                        $noSyncCount++;
+                    if (!$article['activeSales']) {
+                        continue;
                     }
+
+                    if (count($filter) > 0 && !in_array($article['accountWarehouse'], $filter)) {
+                        error_log('Item filtered from sync ' . $article['code']);
+                        $noSyncCount++;
+                        continue;
+                    }
+
+                    if ($article['type'] === 'PRODUCT' && !$settings->importProducts) {
+                        error_log('not importing PRODUCT ' . $article['code']);
+                        $noSyncCount++;
+                        continue;
+                    } elseif ($article['type'] === 'SERVICE' && !$settings->importServices) {
+                        error_log('not importing SERVICE ' . $article['code']);
+                        $noSyncCount++;
+                        continue;
+                    } elseif ($article['type'] === 'WH' && !$settings->importInventory) {
+                        error_log('not importing WH ' . $article['code']);
+                        $noSyncCount++;
+                        continue;
+                    }
+
+                    if (count($products) == 20) {
+                        $productsBatches[] = $products;
+                        $products          = [];
+                    }
+
+                    $products[$article['code']] = [
+                        'code'        => $article['code'],
+                        'price'       => $article['priceSales'],
+                        'description' => $article['description'],
+                        'quantity'    => 0
+                    ];
+                    $syncCount++;
                 }
             }
             $page++;
@@ -63,7 +91,7 @@ class SmartAccountsArticleAsync extends WP_Background_Process
 
     function task($products)
     {
-        if ( ! is_array($products)) {
+        if (!is_array($products)) {
             error_log('Not an array, something is wrong, removing from sync list: ' . print_r($products, true));
 
             return false;
@@ -103,7 +131,7 @@ class SmartAccountsArticleAsync extends WP_Background_Process
         }
         foreach ($products as $code => $product) {
             $productId = wc_get_product_id_by_sku($code);
-            if ( ! $productId) {
+            if (!$productId) {
                 error_log("Inserting product $code");
                 $this->insertProduct($code, $product);
             } else {
@@ -144,7 +172,7 @@ class SmartAccountsArticleAsync extends WP_Background_Process
         $regularPrice = get_post_meta($post_id, '_regular_price', true);
         $finalPrice   = get_post_meta($post_id, '_price', true);
         $salePrice    = get_post_meta($post_id, '_sale_price', true);
-        if ( ! $regularPrice || ! $finalPrice) {
+        if (!$regularPrice || !$finalPrice) {
             // No price set at all yet, set one now.
             update_post_meta($post_id, '_regular_price', $data['price']);
             update_post_meta($post_id, '_price', $data['price']);

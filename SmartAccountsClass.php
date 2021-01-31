@@ -1,5 +1,9 @@
 <?php
 
+if (!defined('ABSPATH')) {
+    exit;
+} // Exit if accessed directly
+
 include_once('SmartAccountsClient.php');
 include_once('SmartAccountsSalesInvoice.php');
 include_once('SmartAccountsApi.php');
@@ -185,7 +189,13 @@ class SmartAccountsClass
         $settings->defaultShipping = sanitize_text_field($unSanitized->defaultShipping);
         $settings->defaultPayment  = sanitize_text_field($unSanitized->defaultPayment);
         $settings->vat_number_meta = sanitize_text_field($unSanitized->vat_number_meta);
+        $settings->warehouseId     = sanitize_text_field($unSanitized->warehouseId);
+        $settings->importServices  = isset($unSanitized->importServices) && $unSanitized->importServices === true;
+        $settings->importProducts  = isset($unSanitized->importProducts) && $unSanitized->importProducts === true;
+        $settings->importInventory = isset($unSanitized->importInventory) && $unSanitized->importInventory === true;
+        $settings->inventoryFilter = sanitize_text_field($unSanitized->inventoryFilter);
         $objectId                  = sanitize_text_field($unSanitized->objectId);
+
         if (preg_match("/^[a-z0-9]{8}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{12}$/", $objectId)) {
             $settings->objectId = $objectId;
         } else {
@@ -257,6 +267,21 @@ class SmartAccountsClass
         }
         if (!isset($currentSettings->vat_number_meta)) {
             $currentSettings->vat_number_meta = "vat_number";
+        }
+        if (!isset($currentSettings->warehouseId)) {
+            $currentSettings->warehouseId = null;
+        }
+        if (!isset($currentSettings->importServices)) {
+            $currentSettings->warehouseId = false;
+        }
+        if (!isset($currentSettings->importProducts)) {
+            $currentSettings->importProducts = true;
+        }
+        if (!isset($currentSettings->importInventory)) {
+            $currentSettings->importInventory = true;
+        }
+        if (!isset($currentSettings->inventoryFilter)) {
+            $currentSettings->inventoryFilter = "";
         }
         if (!isset($currentSettings->paymentMethods) || !is_object($currentSettings->paymentMethods)) {
             $currentSettings->paymentMethods = new stdClass();
@@ -437,6 +462,44 @@ class SmartAccountsClass
                         <td>
                             <label>Mark paid? </label>
                             <input type="checkbox" v-model="settings.paymentMethodsPaid[method]">
+                        </td>
+                    </tr>
+                </table>
+
+                <h2>Warehouse and import config</h2>
+                <small>What type of articles to sync from SmartAccounts and what warehouses to use
+                </small>
+                <table class="form-table">
+                    <tr valign="top">
+                        <th>Import Services</th>
+                        <td>
+                            <input type="checkbox" v-model="settings.importServices">
+                        </td>
+                    </tr>
+                    <tr valign="top">
+                        <th>Import Products</th>
+                        <td>
+                            <input type="checkbox" v-model="settings.importProducts">
+                        </td>
+                    </tr>
+                    <tr valign="top">
+                        <th>Import Warehouse Inventory</th>
+                        <td>
+                            <input type="checkbox" v-model="settings.importInventory">
+                        </td>
+                    </tr>
+                    <tr valign="top">
+                        <th>Warehouse filter (Overrides others)</th>
+                        <td>
+                            <input type="text" v-model="settings.inventoryFilter"><br>
+                            <small>Comma separate list of Inventory account (Laokonto) to use when synching product stock quantities from eg 10710,10741. If not empty then overrides filters above.</small>
+                        </td>
+                    </tr>
+                    <tr valign="top">
+                        <th>What warehouse to use when sending sales invoice.</th>
+                        <td>
+                            <input type="text" v-model="settings.warehouseId"><br>
+                            <small>Leave empty if not not relevant</small>
                         </td>
                     </tr>
                 </table>
