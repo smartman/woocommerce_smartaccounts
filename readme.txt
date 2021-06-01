@@ -58,8 +58,11 @@ These shortcomings can be resolved by additional development. If these are probl
 
 == Changelog ==
 
-= 3.2 =
+= 3.4 =
 Product import filters and Warehouse setting for new invoices.
+
+= 3.2 =
+Strip unsupported characters when creating invoices
 
 = 3.1 =
 VAT number order meta field name is now configurable. If configured and vat number exists then it will be used when creating new client in SmartAccounts

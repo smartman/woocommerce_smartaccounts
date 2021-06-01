@@ -272,7 +272,7 @@ class SmartAccountsClass
             $currentSettings->warehouseId = null;
         }
         if (!isset($currentSettings->importServices)) {
-            $currentSettings->warehouseId = false;
+            $currentSettings->importServices = false;
         }
         if (!isset($currentSettings->importProducts)) {
             $currentSettings->importProducts = true;
