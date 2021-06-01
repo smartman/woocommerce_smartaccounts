@@ -1,7 +1,7 @@
 === Plugin Name ===
 Tags: SmartAccounts, smartaccounts, WooCommerce
 Requires at least: 4.8
-Tested up to: 5.6
+Tested up to: 5.7.2
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -57,6 +57,9 @@ OÜ, AS, MTÜ, KÜ and FIE are removed from the beginning and end of the name an
 These shortcomings can be resolved by additional development. If these are problem for you then please get in touch with margus.pala@gmail.com
 
 == Changelog ==
+
+= 3.5 =
+Filter for editing SmartAccounts body data
 
 = 3.4 =
 Product import filters and Warehouse setting for new invoices.
