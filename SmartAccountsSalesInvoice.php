@@ -36,6 +36,8 @@ class SmartAccountsSalesInvoice
 
         $saArticle = new SmartAccountsArticle();
         $saArticle->ensureAllArticlesExist($body->rows);
+		
+		$body = apply_filters( 'sa_save_offer', $body, $this->order );
 
         $offer = $this->api->sendRequest($body, $apiUrl);
 
@@ -68,10 +70,11 @@ class SmartAccountsSalesInvoice
         if ($settings && $settings->warehouseId) {
             $body->warehouseId = $settings->warehouseId;
         }
-
-
+		
         $saArticle = new SmartAccountsArticle();
         $saArticle->ensureAllArticlesExist($body->rows);
+		
+		$body = apply_filters( 'sa_save_invoice', $body, $this->order );
 
         $salesInvoice = $this->api->sendRequest($body, $apiUrl);
 
