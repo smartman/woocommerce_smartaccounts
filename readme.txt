@@ -58,6 +58,9 @@ These shortcomings can be resolved by additional development. If these are probl
 
 == Changelog ==
 
+= 3.6 =
+Price update improvements and more detailed logging for existing customer matching.
+
 = 3.5 =
 Filter for editing SmartAccounts body data
 

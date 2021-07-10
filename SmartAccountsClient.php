@@ -79,8 +79,9 @@ class SmartAccountsClient
             $client = urlencode($name);
         }
 
-        $clients = $this->api->sendRequest(null, $apiUrl,
-            "fetchAddresses=true&fetchContacts=true&nameOrRegCode=" . $client);
+        $clients        = $this->api->sendRequest(null, $apiUrl, "fetchAddresses=true&fetchContacts=true&nameOrRegCode=" . $client);
+        $hasMoreEntries = isset($clients['hasMoreEntries']) && $clients['hasMoreEntries'] ? "YES" : "NO";
+        error_log("Found " . count($clients['clients']) . " SA clients. hasMoreEntryies: $hasMoreEntries");
 
         if ($this->isAnonymous) {
             return $this->getAnonymousClient($clients["clients"], $this->country, $this->name);
@@ -100,6 +101,7 @@ class SmartAccountsClient
             }
         }
 
+        error_log("Create anonymous customer for county $country to SmartAccounts");
         return $this->addNewSaClient(null, $name, $country);
     }
 
@@ -188,17 +190,21 @@ class SmartAccountsClient
     private function getLoggedInClient($clients, $country, $name, $email)
     {
         if (!is_array($clients) || count($clients) == 0) {
+            error_log("No SA customers found, creating new with name $name");
             return $this->addNewSaClient($email, $name, $country);
         }
 
+        $clientNames = [];
         foreach ($clients as $client) {
-            //match client if name matches and is company or email also matches
-            if (($this->isCompany || $this->hasEmail($client,
-                        $email)) && strtolower($this->name) == strtolower($client["name"])) {
+            //match client if name matches and (is company or email also matches)
+            if (($this->isCompany || $this->hasEmail($client, $email)) &&
+                strtolower(trim($this->name)) === strtolower(trim($client["name"]))) {
                 return $client;
             }
+            $clientNames[] = $client['name'];
         }
 
+        error_log("No good match found for $name, creating new company. Found names " . json_encode($clientNames));
         return $this->addNewSaClient($email, $name, $country);
     }
 

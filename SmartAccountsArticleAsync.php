@@ -179,6 +179,10 @@ class SmartAccountsArticleAsync extends WP_Background_Process
         } elseif ($salePrice && ($salePrice !== $regularPrice)) {
             // Sale price is set. Update only regular price and keep actual sale price what it is.
             update_post_meta($post_id, '_regular_price', $data['price']);
+        } elseif (!$salePrice && ($data['price'] != $finalPrice && $regularPrice === $finalPrice)) {
+            // if no sale price and price in SmartAccounts has changed then change also in the WooCommerce
+            update_post_meta($post_id, '_regular_price', $data['price']);
+            update_post_meta($post_id, '_price', $data['price']);
         }
 
         if ($finalPrice && (floatval($data['price']) > floatval($regularPrice))) {
