@@ -104,7 +104,7 @@ class SmartAccountsClass
                 error_log("SmartAccounts order $order_id already sent, not sending again, SA id="
                           . get_post_meta($order_id, 'smartaccounts_invoice_id', true));
 
-//                return; //Smartaccounts order is already created
+                return; //Smartaccounts order is already created
             }
 
             $saClient       = new SmartAccountsClient($order);
