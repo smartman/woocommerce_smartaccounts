@@ -58,6 +58,9 @@ These shortcomings can be resolved by additional development. If these are probl
 
 == Changelog ==
 
+= 3.7 =
+Option to include SmartAccounts invoice when sending order completed message to the customer.
+
 = 3.6 =
 Price update improvements and more detailed logging for existing customer matching.
 

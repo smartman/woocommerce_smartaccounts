@@ -81,7 +81,7 @@ class SmartAccountsClient
 
         $clients        = $this->api->sendRequest(null, $apiUrl, "fetchAddresses=true&fetchContacts=true&nameOrRegCode=" . $client);
         $hasMoreEntries = isset($clients['hasMoreEntries']) && $clients['hasMoreEntries'] ? "YES" : "NO";
-        error_log("Found " . count($clients['clients']) . " SA clients. hasMoreEntryies: $hasMoreEntries");
+        error_log("Found " . count($clients['clients']) . " SA clients. hasMoreEntries: $hasMoreEntries");
 
         if ($this->isAnonymous) {
             return $this->getAnonymousClient($clients["clients"], $this->country, $this->name);
@@ -101,7 +101,7 @@ class SmartAccountsClient
             }
         }
 
-        error_log("Create anonymous customer for county $country to SmartAccounts");
+        error_log("Create anonymous customer for country $country to SmartAccounts");
         return $this->addNewSaClient(null, $name, $country);
     }
 

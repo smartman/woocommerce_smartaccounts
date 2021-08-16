@@ -12,6 +12,34 @@ include_once('SmartAccountsArticle.php');
 
 class SmartAccountsClass
 {
+    public static function attachPdf($attachments, $email_id, WC_Order $order, $email)
+    {
+        $settings = self::getSettings();
+        // IF PDF attaching disabled then skip
+        // If no real_id found the skip
+        // If not order completed then skip
+        $invoiceId     = get_post_meta($order->get_id(), 'smartaccounts_invoice_real_id', true);
+        $invoiceNumber = get_post_meta($order->get_id(), 'smartaccounts_invoice_id', true);
+        if ($email_id !== "customer_completed_order" || !$invoiceId || !$settings->attachPdf) {
+            return $attachments;
+        }
+
+        $api = new SmartAccountsApi();
+        try {
+            $response = $api->sendRequest(null, 'purchasesales/clientinvoices:getpdf', "id=$invoiceId");
+        } catch (Exception $exception) {
+            error_log("PDF not received to attach to the invoice");
+            return $attachments;
+        }
+
+        $fileName = sys_get_temp_dir() . DIRECTORY_SEPARATOR . "invoice_$invoiceNumber.pdf";
+        file_put_contents($fileName, $response);
+        $attachments[] = $fileName;
+        error_log("Attachments are now: $email_id " . json_encode($attachments));
+
+        return $attachments;
+    }
+
     public static function orderOfferStatusProcessing($order_id)
     {
         error_log("Order $order_id changed status. Checking if sending OFFER to SmartAccounts");
@@ -21,8 +49,8 @@ class SmartAccountsClass
             if (strlen(get_post_meta($order_id, 'smartaccounts_invoice_id', true)) > 0
                 || strlen(get_post_meta($order_id, 'smartaccounts_offer_id', true)) > 0) {
                 error_log("SmartAccounts order $order_id already sent as offer or invoice, not sending OFFER again, SA id="
-                    . get_post_meta($order_id, 'smartaccounts_invoice_id', true) . " offer_id="
-                    . get_post_meta($order_id, 'smartaccounts_offer_id', true));
+                          . get_post_meta($order_id, 'smartaccounts_invoice_id', true) . " offer_id="
+                          . get_post_meta($order_id, 'smartaccounts_offer_id', true));
 
                 return; //Smartaccounts offer is already created
             }
@@ -74,9 +102,9 @@ class SmartAccountsClass
             $order = wc_get_order($order_id);
             if (strlen(get_post_meta($order_id, 'smartaccounts_invoice_id', true)) > 0) {
                 error_log("SmartAccounts order $order_id already sent, not sending again, SA id="
-                    . get_post_meta($order_id, 'smartaccounts_invoice_id', true));
+                          . get_post_meta($order_id, 'smartaccounts_invoice_id', true));
 
-                return; //Smartaccounts order is already created
+//                return; //Smartaccounts order is already created
             }
 
             $saClient       = new SmartAccountsClient($order);
@@ -87,6 +115,7 @@ class SmartAccountsClass
             $saPayment = new SmartAccountsPayment($order, $invoice);
             $saPayment->createPayment();
             update_post_meta($order_id, 'smartaccounts_invoice_id', $invoice['invoice']['invoiceNumber']);
+            update_post_meta($order_id, 'smartaccounts_invoice_real_id', $invoice['invoice']['invoiceId']);
             error_log("SmartAccounts sales invoice created for order $order_id - " . $invoice['invoice']['invoiceNumber']);
             $order->add_order_note("Invoice sent to SmartAccounts: " . $invoice['invoice']['invoiceNumber']);
 
@@ -193,6 +222,7 @@ class SmartAccountsClass
         $settings->importServices  = isset($unSanitized->importServices) && $unSanitized->importServices === true;
         $settings->importProducts  = isset($unSanitized->importProducts) && $unSanitized->importProducts === true;
         $settings->importInventory = isset($unSanitized->importInventory) && $unSanitized->importInventory === true;
+        $settings->attachPdf       = isset($unSanitized->attachPdf) && $unSanitized->attachPdf === true;
         $settings->inventoryFilter = sanitize_text_field($unSanitized->inventoryFilter);
         $objectId                  = sanitize_text_field($unSanitized->objectId);
 
@@ -279,6 +309,9 @@ class SmartAccountsClass
         }
         if (!isset($currentSettings->importInventory)) {
             $currentSettings->importInventory = true;
+        }
+        if (!isset($currentSettings->attachPdf)) {
+            $currentSettings->attachPdf = false;
         }
         if (!isset($currentSettings->inventoryFilter)) {
             $currentSettings->inventoryFilter = "";
@@ -492,14 +525,23 @@ class SmartAccountsClass
                         <th>Warehouse filter (Overrides others)</th>
                         <td>
                             <input type="text" v-model="settings.inventoryFilter"><br>
-                            <small>Comma separate list of Inventory account (Laokonto) to use when synching product stock quantities from eg 10710,10741. If not empty then overrides filters above.</small>
+                            <small>Comma separate list of Inventory account (Laokonto) to use when synching product
+                                stock quantities from eg 10710,10741. If not empty then overrides filters
+                                above.</small>
                         </td>
                     </tr>
                     <tr valign="top">
                         <th>What warehouse to use when sending sales invoice.</th>
                         <td>
                             <input type="text" v-model="settings.warehouseId"><br>
-                            <small>Leave empty if not not relevant</small>
+                            <small>Leave empty if not relevant. Usually empty</small>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>Attach SmartAccounts PDF invoice customer e-mail</th>
+                        <td>
+                            <input type="checkbox" v-model="settings.attachPdf">
+                            <small></small>
                         </td>
                     </tr>
                 </table>
