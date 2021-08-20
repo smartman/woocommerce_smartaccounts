@@ -12,15 +12,19 @@ include_once('SmartAccountsArticle.php');
 
 class SmartAccountsClass
 {
-    public static function attachPdf($attachments, $email_id, WC_Order $order, $email)
+    public static function attachPdf($attachments, $email_id, $order, $email = null)
     {
+        // if not related then skip
+        if ($email_id !== "customer_completed_order" || !is_a($order, WC_Order::class)) {
+            return $attachments;
+        }
         $settings = self::getSettings();
         // IF PDF attaching disabled then skip
         // If no real_id found the skip
         // If not order completed then skip
         $invoiceId     = get_post_meta($order->get_id(), 'smartaccounts_invoice_real_id', true);
         $invoiceNumber = get_post_meta($order->get_id(), 'smartaccounts_invoice_id', true);
-        if ($email_id !== "customer_completed_order" || !$invoiceId || !$settings->attachPdf) {
+        if (!$invoiceId || !$settings->attachPdf) {
             return $attachments;
         }
 
