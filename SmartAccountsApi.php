@@ -6,7 +6,6 @@ if (!defined('ABSPATH')) {
 
 class SmartAccountsApi
 {
-
     public function sendRequest($body, $apiUrl, $extraParams = null)
     {
         error_log("Sending SA call to $apiUrl");
@@ -15,7 +14,7 @@ class SmartAccountsApi
         }
         $now = new DateTime();
         $now->setTimezone(new DateTimeZone('Europe/Tallinn'));
-        $settings = json_decode(get_option("sa_settings"));
+        $settings = SmartAccountsClass::getSettings();
         $pk       = $settings->apiKey;
         $sk       = $settings->apiSecret;
 

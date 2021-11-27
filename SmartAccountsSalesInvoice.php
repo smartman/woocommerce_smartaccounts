@@ -29,7 +29,7 @@ class SmartAccountsSalesInvoice
         $body->amount      = $this->order->get_total();
         $body->offerNote   = "WooCommerce order #" . $this->order->get_id() . ". " . $this->order->get_customer_note();
 
-        $settings = json_decode(get_option("sa_settings"));
+        $settings = SmartAccountsClass::getSettings();
         if ($settings && $settings->objectId) {
             $body->objectId = $settings->objectId;
         }
@@ -62,7 +62,7 @@ class SmartAccountsSalesInvoice
             $body->offerId = $this->order->get_meta('smartaccounts_offer_id', true);
         }
 
-        $settings = json_decode(get_option("sa_settings"));
+        $settings = SmartAccountsClass::getSettings();
         if ($settings && $settings->objectId) {
             $body->objectId = $settings->objectId;
         }
@@ -148,7 +148,7 @@ class SmartAccountsSalesInvoice
             $row->totalCents = intval(round(floatval($row->price) * $row->quantity * 100));
             $row->taxCents   = intval(round($row->totalCents * $vatPc / 100));
 
-            $settings = json_decode(get_option("sa_settings"));
+            $settings = SmartAccountsClass::getSettings();
             if ($settings && $settings->objectId) {
                 $row->objectId = $settings->objectId;
             }
@@ -167,7 +167,7 @@ class SmartAccountsSalesInvoice
             $row->totalCents  = intval(round(floatval($row->price) * $row->quantity * 100));
             $row->taxCents    = intval(round($row->totalCents * $vatPc / 100));
 
-            $settings = json_decode(get_option("sa_settings"));
+            $settings = SmartAccountsClass::getSettings();
             if ($settings && $settings->objectId) {
                 $row->objectId = $settings->objectId;
             }

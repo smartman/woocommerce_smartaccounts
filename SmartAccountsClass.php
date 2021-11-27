@@ -223,6 +223,7 @@ class SmartAccountsClass
         $settings->defaultPayment  = sanitize_text_field($unSanitized->defaultPayment);
         $settings->vat_number_meta = sanitize_text_field($unSanitized->vat_number_meta);
         $settings->warehouseId     = sanitize_text_field($unSanitized->warehouseId);
+        $settings->updatePrices    = isset($unSanitized->updatePrices) && $unSanitized->updatePrices === true;
         $settings->importServices  = isset($unSanitized->importServices) && $unSanitized->importServices === true;
         $settings->importProducts  = isset($unSanitized->importProducts) && $unSanitized->importProducts === true;
         $settings->importInventory = isset($unSanitized->importInventory) && $unSanitized->importInventory === true;
@@ -250,13 +251,14 @@ class SmartAccountsClass
 
         $settings->currencyBanks = [];
         foreach ($unSanitized->currencyBanks as $currencyBank) {
+            if (!$currencyBank->currency_code || !$currencyBank->currency_bank) {
+                continue;
+            }
             $newCurrencyBank                 = new stdClass();
             $newCurrencyBank->payment_method = sanitize_text_field($currencyBank->payment_method);
             $newCurrencyBank->currency_code  = sanitize_text_field($currencyBank->currency_code);
             $newCurrencyBank->currency_bank  = sanitize_text_field($currencyBank->currency_bank);
-            if (!$newCurrencyBank->currency_code || !$newCurrencyBank->currency_bank) {
-                continue;
-            }
+
             array_push($settings->currencyBanks, $newCurrencyBank);
         }
 
@@ -292,8 +294,6 @@ class SmartAccountsClass
 
     public static function getSettings()
     {
-        self::convertOldSettings();
-
         $currentSettings = json_decode(get_option('sa_settings') ? get_option('sa_settings') : "");
 
         if (!$currentSettings) {
@@ -313,6 +313,9 @@ class SmartAccountsClass
         }
         if (!isset($currentSettings->importInventory)) {
             $currentSettings->importInventory = true;
+        }
+        if (!isset($currentSettings->updatePrices)) {
+            $currentSettings->updatePrices = true;
         }
         if (!isset($currentSettings->attachPdf)) {
             $currentSettings->attachPdf = false;
@@ -526,6 +529,12 @@ class SmartAccountsClass
                         </td>
                     </tr>
                     <tr valign="top">
+                        <th>Update prices from SmartAccounts</th>
+                        <td>
+                            <input type="checkbox" v-model="settings.updatePrices">
+                        </td>
+                    </tr>
+                    <tr valign="top">
                         <th>Warehouse filter (Overrides others)</th>
                         <td>
                             <input type="text" v-model="settings.inventoryFilter"><br>
@@ -651,52 +660,6 @@ class SmartAccountsClass
         }
 
         return $enabled_gateways;
-    }
-
-    //not very expensive to run every time when getting SA settings, better safe than sorry
-    public static function convertOldSettings()
-    {
-        if (get_option('sa_api_pk')) {
-            $settings                  = new stdClass();
-            $settings->apiKey          = get_option('sa_api_pk');
-            $settings->apiSecret       = get_option('sa_api_sk');
-            $settings->defaultShipping = get_option('sa_api_shipping_code');
-            $settings->defaultPayment  = get_option('sa_api_payment_account');
-            update_option('sa_settings', json_encode($settings));
-            delete_option('sa_api_pk');
-            delete_option('sa_api_sk');
-            delete_option('sa_api_shipping_code');
-            delete_option('sa_api_payment_account');
-        }
-
-        $settings = json_decode(get_option('sa_settings')) ? json_decode(get_option('sa_settings')) : new stdClass();
-
-        $gateways = WC()->payment_gateways->payment_gateways() ? WC()->payment_gateways->payment_gateways() : [];
-
-        foreach ($gateways as $gateway) {
-            $title = $gateway->title;
-            $id    = $gateway->id;
-            //move paid methods over to ID-s from title
-            if (property_exists($settings, 'paymentMethodsPaid')) {
-                if (property_exists($settings->paymentMethodsPaid, $title)) {
-                    $settings->paymentMethodsPaid->$id = $settings->paymentMethodsPaid->$title;
-                    unset($settings->paymentMethodsPaid->$title);
-                }
-            }
-
-            //move currency bank accounts over to ID-s from title
-            if (property_exists($settings, 'currencyBanks')) {
-                $newCurrencyBanks = [];
-                foreach ($settings->currencyBanks as $key => $value) {
-                    if ($value->payment_method === $title) {
-                        $value->payment_method = $id;
-                    }
-                    $newCurrencyBanks[] = $value;
-                }
-                $settings->currencyBanks = $newCurrencyBanks;
-            }
-        }
-        update_option('sa_settings', json_encode($settings));
     }
 
     public static function loadAsyncClass()

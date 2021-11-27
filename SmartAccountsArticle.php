@@ -19,7 +19,7 @@ class SmartAccountsArticle
         foreach ($rows as $row) {
             $body     = new stdClass();
             $articles = $this->api->sendRequest($body, $getApiUrl, "code=" . urlencode($row->code));
-            $settings = json_decode(get_option("sa_settings"));
+            $settings = SmartAccountsClass::getSettings();
             if (!(array_key_exists("articles", $articles) && count($articles["articles"]) == 1)) {
                 $body              = new stdClass();
                 $body->code        = $row->code;
