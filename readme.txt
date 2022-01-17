@@ -1,13 +1,15 @@
 === Plugin Name ===
 Tags: SmartAccounts, smartaccounts, WooCommerce
 Requires at least: 4.8
-Tested up to: 5.8.2
+Tested up to: 5.8.3
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
 Send sales invoices to smartaccounts.ee Online Accounting Software and sync products with warehouse quantities.
 
 == Description ==
+
+DISCLAIMER! This plugin has been developed by a third party (not SmartAccounts development) and is provided on as-is basis, without support or any type of guarantee. This means that you need to contact your own Woocommerce/Wordpress/PHP developer in case you need help setting the plugin up or the plugin does not meet your requirements. Feel free to modify the code as needed!
 
 This plugin:
 * Creates Customer to SmartAccounts if no existing customer with same name and e-mail found
@@ -54,9 +56,12 @@ OÜ, AS, MTÜ, KÜ and FIE are removed from the beginning and end of the name an
 * If plugin creates offer and this offer is deleted by the time invoice is created then creating invoice will fail.
 * Exact shipping method is not sent to SmartAccounts
 
-These shortcomings can be resolved by additional development. If these are problem for you then please get in touch with margus.pala@gmail.com
+These shortcomings can be resolved by additional development.
 
 == Changelog ==
+
+= 3.8.1 =
+Support disclaimer update
 
 = 3.8.0 =
 Allow skipping prices synchronization
